@@ -1,0 +1,2651 @@
+[
+ {
+  "workoutName": "Calistenia A",
+  "sportType": {
+   "sportTypeId": 5,
+   "sportTypeKey": "strength_training"
+  },
+  "description": "Tangerine · Calistenia A",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 5,
+     "sportTypeKey": "strength_training"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Calentamiento. Brazos, muñecas, scapular pulls, sentadillas"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 2,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 3,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Negativas de dominada 3–5. Salta arriba y baja en 5 s",
+        "category": "PULL_UP",
+        "exerciseName": "PULL_UP",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 4,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 5,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Sentadilla búlgara 8–12. Pie de atrás en una silla · por pierna",
+        "category": "LUNGE",
+        "exerciseName": "LUNGE",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 6,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 7,
+      "childStepId": 2,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 8,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 5,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Fondos en paralelas 5–8.",
+        "category": "TRICEPS_EXTENSION",
+        "exerciseName": "BODY_WEIGHT_DIP",
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 9,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 10,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 10,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Puente de glúteo a una pierna 10–15. Por pierna",
+        "category": "HIP_RAISE",
+        "exerciseName": "SINGLE_LEG_HIP_RAISE",
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 11,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 2
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 12,
+      "childStepId": 3,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 13,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Remo entre las paralelas 8–12. Tumbado entre las dos barras",
+        "category": "ROW",
+        "exerciseName": "INVERTED_ROW",
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 14,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 15,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 10,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Flexiones 10–15.",
+        "category": "PUSH_UP",
+        "exerciseName": "PUSH_UP",
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 16,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 3
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 17,
+      "childStepId": 4,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 18,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 1,
+         "conditionTypeKey": "lap.button"
+        },
+        "endConditionValue": null,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Hollow hold 20–40 s.",
+        "category": "CRUNCH",
+        "exerciseName": "HOLLOW_ROCK",
+        "childStepId": 4
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 19,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 75,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 4
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Calistenia B",
+  "sportType": {
+   "sportTypeId": 5,
+   "sportTypeKey": "strength_training"
+  },
+  "description": "Tangerine · Calistenia B",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 5,
+     "sportTypeKey": "strength_training"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Calentamiento. Brazos, muñecas, scapular pulls, sentadillas"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 2,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 3,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Negativas con agarre supino 3–5. Antes, 8 scapular pulls",
+        "category": "PULL_UP",
+        "exerciseName": "CHIN_UP",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 4,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 5,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Step-down lateral 8–12. Desde un escalón · baja despacio · por pierna",
+        "category": "SQUAT",
+        "exerciseName": "PARTIAL_SINGLE_LEG_SQUAT",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 6,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 7,
+      "childStepId": 2,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 8,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 1,
+         "conditionTypeKey": "lap.button"
+        },
+        "endConditionValue": null,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Aguante arriba en paralelas 20–40 s. Brazos bloqueados, hombros abajo",
+        "category": "TRICEPS_EXTENSION",
+        "exerciseName": "BENCH_DIP",
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 9,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 10,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Plancha lateral con elevación 8–12. Glúteo medio · por lado",
+        "category": "PLANK",
+        "exerciseName": "KNEELING_SIDE_PLANK_WITH_LEG_LIFT",
+        "childStepId": 2
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 11,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 2
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 12,
+      "childStepId": 3,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 13,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 6,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Pike push-ups 6–10.",
+        "category": "PUSH_UP",
+        "exerciseName": "PIKE_PUSH_UP",
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 14,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 15,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Remo entre las paralelas 8–12. Tumbado entre las dos barras",
+        "category": "ROW",
+        "exerciseName": "INVERTED_ROW",
+        "childStepId": 3
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 16,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 3
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 17,
+      "childStepId": 4,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 18,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 10,
+         "conditionTypeKey": "reps"
+        },
+        "endConditionValue": 8,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Elevaciones de rodillas colgado 8–12.",
+        "category": "LEG_RAISE",
+        "exerciseName": "HANGING_KNEE_RAISE",
+        "childStepId": 4
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 19,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 75,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 4
+       }
+      ]
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 20,
+      "childStepId": 5,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 2,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 2,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 21,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 1,
+         "conditionTypeKey": "lap.button"
+        },
+        "endConditionValue": null,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Colgado de la barra 30–45 s.",
+        "category": "MOVE",
+        "exerciseName": "STAND_AND_HANG",
+        "childStepId": 5
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 22,
+        "stepType": {
+         "stepTypeId": 5,
+         "stepTypeKey": "rest"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 75,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": null,
+        "childStepId": 5
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Prueba máximos",
+  "sportType": {
+   "sportTypeId": 5,
+   "sportTypeKey": "strength_training"
+  },
+  "description": "Tangerine · Prueba máximos",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 5,
+     "sportTypeKey": "strength_training"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Calentamiento. Y una serie suave de cada uno"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 1,
+       "conditionTypeKey": "lap.button"
+      },
+      "endConditionValue": null,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Dominadas al máximo. Sin balanceo, de brazos rectos a barbilla por encima.",
+      "category": "PULL_UP",
+      "exerciseName": "PULL_UP"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 5,
+       "stepTypeKey": "rest"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 180,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": null
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 4,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 1,
+       "conditionTypeKey": "lap.button"
+      },
+      "endConditionValue": null,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Fondos al máximo. Hasta que el brazo quede paralelo al suelo.",
+      "category": "TRICEPS_EXTENSION",
+      "exerciseName": "BODY_WEIGHT_DIP"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 5,
+       "stepTypeKey": "rest"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 180,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": null
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 6,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 1,
+       "conditionTypeKey": "lap.button"
+      },
+      "endConditionValue": null,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Flexiones al máximo. Pecho casi al suelo, cuerpo recto.",
+      "category": "PUSH_UP",
+      "exerciseName": "PUSH_UP"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 7,
+      "stepType": {
+       "stepTypeId": 5,
+       "stepTypeKey": "rest"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 180,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": null
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S1",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S1",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 8,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 8,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 90,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S2",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S2",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 6,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 6,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 120,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 90,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S3",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S3",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 5,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 5,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 180,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S4",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S4",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 4,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 4,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 300,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S5",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S5",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 3,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 3,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 480,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S6",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S6",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "RepeatGroupDTO",
+      "stepOrder": 4,
+      "childStepId": 1,
+      "stepType": {
+       "stepTypeId": 6,
+       "stepTypeKey": "repeat"
+      },
+      "numberOfIterations": 2,
+      "smartRepeat": false,
+      "endCondition": {
+       "conditionTypeId": 7,
+       "conditionTypeKey": "iterations"
+      },
+      "endConditionValue": 2,
+      "workoutSteps": [
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 2,
+        "stepType": {
+         "stepTypeId": 3,
+         "stepTypeKey": "interval"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 720,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Corre suave, ritmo de poder hablar",
+        "childStepId": 1
+       },
+       {
+        "type": "ExecutableStepDTO",
+        "stepOrder": 3,
+        "stepType": {
+         "stepTypeId": 4,
+         "stepTypeKey": "recovery"
+        },
+        "endCondition": {
+         "conditionTypeId": 2,
+         "conditionTypeKey": "time"
+        },
+        "endConditionValue": 60,
+        "targetType": {
+         "workoutTargetTypeId": 1,
+         "workoutTargetTypeKey": "no.target"
+        },
+        "description": "Anda",
+        "childStepId": 1
+       }
+      ]
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S7",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S7",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 1200,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Corre suave, ritmo de poder hablar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S8",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S8",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 1500,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Corre suave, ritmo de poder hablar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Correr S9",
+  "sportType": {
+   "sportTypeId": 1,
+   "sportTypeKey": "running"
+  },
+  "description": "Tangerine · Correr S9",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 1,
+     "sportTypeKey": "running"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 1,
+       "stepTypeKey": "warmup"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para calentar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 1800,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Corre suave, ritmo de poder hablar"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 2,
+       "stepTypeKey": "cooldown"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 300,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Anda para soltar"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Movilidad sábado",
+  "sportType": {
+   "sportTypeId": 11,
+   "sportTypeKey": "mobility"
+  },
+  "description": "Tangerine · Movilidad sábado",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 11,
+     "sportTypeKey": "mobility"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 180,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "90/90 con cambios"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Flexor de cadera · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Flexor de cadera · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 4,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 90,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Paloma · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 90,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Paloma · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 6,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 60,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Sentadilla profunda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 7,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Tobillo a la pared · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 8,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Tobillo a la pared · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 9,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Libro abierto · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 10,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Libro abierto · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 11,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Puente de glúteo"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 12,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 13,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 14,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 30,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Colgado pasivo"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 15,
+      "stepType": {
+       "stepTypeId": 5,
+       "stepTypeKey": "rest"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 15,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Descansa"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 16,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 30,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Colgado pasivo"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 17,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Dislocaciones con toalla"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 18,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 90,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Respiración, piernas en una silla"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Movilidad hombros",
+  "sportType": {
+   "sportTypeId": 11,
+   "sportTypeKey": "mobility"
+  },
+  "description": "Tangerine · Movilidad hombros",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 11,
+     "sportTypeKey": "mobility"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 30,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Colgado pasivo"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 5,
+       "stepTypeKey": "rest"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 15,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Descansa"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 30,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Colgado pasivo"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 4,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 60,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Dislocaciones con toalla"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Pecho en la paralela · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 6,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Pecho en la paralela · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 7,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 60,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Libro abierto · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 8,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 60,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Libro abierto · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 9,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 60,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Gato-camello"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 10,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Muñecas · palmas"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 11,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Muñecas · dorsos"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "workoutName": "Movilidad cadera",
+  "sportType": {
+   "sportTypeId": 11,
+   "sportTypeKey": "mobility"
+  },
+  "description": "Tangerine · Movilidad cadera",
+  "workoutSegments": [
+   {
+    "segmentOrder": 1,
+    "sportType": {
+     "sportTypeId": 11,
+     "sportTypeKey": "mobility"
+    },
+    "workoutSteps": [
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 1,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja con pausa · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 2,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja con pausa · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 3,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja con pausa · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 4,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Almeja con pausa · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 5,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Lateral de cadera · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 6,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Lateral de cadera · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 7,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Cuádriceps · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 8,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Cuádriceps · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 9,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Gemelo en la pared · izquierda"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 10,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 45,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "Gemelo en la pared · derecha"
+     },
+     {
+      "type": "ExecutableStepDTO",
+      "stepOrder": 11,
+      "stepType": {
+       "stepTypeId": 3,
+       "stepTypeKey": "interval"
+      },
+      "endCondition": {
+       "conditionTypeId": 2,
+       "conditionTypeKey": "time"
+      },
+      "endConditionValue": 90,
+      "targetType": {
+       "workoutTargetTypeId": 1,
+       "workoutTargetTypeKey": "no.target"
+      },
+      "description": "90/90 lento"
+     }
+    ]
+   }
+  ]
+ }
+]
