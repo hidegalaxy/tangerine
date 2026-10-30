@@ -342,6 +342,21 @@
   .aviso-flotante { position: absolute; left: 50%; bottom: 88px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--text); color: var(--ink); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 14px; transition: .25s; z-index: 9; max-width: calc(100% - 40px); text-align: center; }
   .aviso-flotante.ver { opacity: 1; transform: translate(-50%, 0); }
 
+  /* Pantalla de carga: la mandarina bota como una pelota mientras llegan tus datos. */
+  .splash { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; transition: opacity .45s ease; }
+  .splash.fuera { opacity: 0; pointer-events: none; }
+  .splash .logo { width: 108px; height: 108px; border-radius: 28px; background: var(--tang); display: grid; place-items: center; overflow: hidden; transition: transform .45s ease; }
+  .splash.fuera .logo { transform: scale(1.15); }
+  .splash .logo svg { transform-origin: 50% 100%; animation: bote-mandarina .9s cubic-bezier(.45, 0, .55, 1) infinite; }
+  .splash .nombre { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  .splash .puntos { display: flex; gap: 8px; height: 12px; }
+  .splash .puntos i { width: 10px; height: 10px; border-radius: 5px; background: var(--tang); animation: punto 1s ease-in-out infinite; }
+  .splash .puntos i:nth-child(2) { animation-delay: .15s; background: var(--run); }
+  .splash .puntos i:nth-child(3) { animation-delay: .3s; background: var(--mov); }
+  .splash .frase { font-size: 14px; color: var(--muted); height: 20px; transition: opacity .25s; }
+  @keyframes bote-mandarina { 0%, 100% { transform: translateY(-12px); } 45% { transform: translateY(6px) scale(1, 1); } 55% { transform: translateY(8px) scale(1.08, .9); } }
+  @keyframes punto { 0%, 100% { transform: translateY(2px); opacity: .5; } 50% { transform: translateY(-4px); opacity: 1; } }
+
   /* Dibujos */
   .dibujo { width: 100%; max-width: 320px; display: block; color: var(--text); background: color-mix(in srgb, var(--text) 4%, transparent); border-radius: 16px; }
   .dj-cerca { stroke: var(--text); }
@@ -359,6 +374,12 @@
 </style>
 </head>
 <body data-k="<?= clave ?>">
+<div class="splash" id="splash" role="status" aria-label="Cargando">
+  <div class="logo" aria-hidden="true"><svg width="66" height="66" viewBox="0 0 32 32"><circle cx="16" cy="18.5" r="10.5" fill="#0e0c0b"/><path d="M16 8.5c.8-2.8 3.6-4.2 6.4-3.7-.5 2.8-2.9 4.6-6.4 3.7z" fill="#0e0c0b"/><circle cx="12.6" cy="15.8" r=".9" fill="#ff9a3c" opacity=".4"/></svg></div>
+  <div class="nombre">Tangerine</div>
+  <div class="puntos" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="frase" id="frase">Calentando…</div>
+</div>
 <div class="app">
   <header class="top">
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="11" fill="#ff9a3c"/><path d="M16 7c1-3 4-4.5 7-4-.5 3-3 5-7 4z" fill="#8de0ae"/></svg>
@@ -1208,6 +1229,7 @@ const PLAN = (() => {
     }
     recalcular();
     pintar();
+    quitarSplash();
     enviar();
   }
   async function enviar() {
@@ -1247,6 +1269,7 @@ const PLAN = (() => {
   }
 
   function pantallaClave(error) {
+    quitarSplash();
     $('nav').hidden = true;
     main.innerHTML = !API
       ? `<section class="tarjeta"><b>Falta conectar tu servidor</b><p class="sub">Abre Tangerine con el enlace o el QR que te dio tu servidor de Google (la dirección que acaba en /exec). Solo la primera vez.</p></section>`
@@ -1255,6 +1278,27 @@ const PLAN = (() => {
           <button class="btn">Entrar</button></form>`;
     const f = $('formClave');
     if (f) f.onsubmit = ev => { ev.preventDefault(); const c = $('campoClave').value.trim(); if (c) location.href = location.pathname + '?k=' + encodeURIComponent(c); };
+  }
+
+  /* ---------- Pantalla de carga ---------- */
+  const SPLASH_DESDE = Date.now();
+  const FRASES = ['Calentando…', 'Atando las zapatillas…', 'Colgando de la barra…', 'Estirando la cadera…', 'Contando series…', 'Casi está…'];
+  let nFrase = 0;
+  const cambiarFrase = setInterval(() => {
+    const f = $('frase');
+    if (!f) return clearInterval(cambiarFrase);
+    f.style.opacity = 0;
+    setTimeout(() => { nFrase = Math.min(nFrase + 1, FRASES.length - 1); f.textContent = FRASES[nFrase]; f.style.opacity = 1; }, 250);
+  }, 1400);
+  // Como mínimo 1,1 s en pantalla, para que no parpadee.
+  function quitarSplash() {
+    const s = $('splash');
+    if (!s || s.classList.contains('fuera')) return;
+    setTimeout(() => {
+      s.classList.add('fuera');
+      clearInterval(cambiarFrase);
+      setTimeout(() => s.remove(), 500);
+    }, Math.max(0, 1100 - (Date.now() - SPLASH_DESDE)));
   }
 
   let avisoT = null;
@@ -1900,7 +1944,12 @@ const PLAN = (() => {
 
   recalcular();
   if (!DEMO && !EN_GOOGLE && !(API && K)) pantallaClave('');
-  else { pintar(); cargar(); }
+  else {
+    pintar();
+    // Con datos ya guardados en el móvil no hace falta esperar al servidor.
+    if (DEMO || LOG.length || COLA.length) quitarSplash();
+    cargar();
+  }
 </script>
 </body>
 </html>
