@@ -77,7 +77,7 @@ function doGet(e) {
   if (p.accion === 'instalar' || (!p.k && !p.accion)) return paginaInstalar_(p.k);
   if (!claveValida_(p.k)) return p.accion === 'datos' || p.accion === 'widget' ? json_({ error: 'Clave incorrecta' }) : texto_('Clave incorrecta');
   if (p.accion === 'hoy') return texto_(textoHoy_());
-  if (p.accion === 'widget') return json_(widget_());
+  if (p.accion === 'widget') return json_(widget_(p.k));
   if (p.accion === 'scriptable') return texto_(SCRIPTABLE_.replace('__URL__', ScriptApp.getService().getUrl() + '?k=' + p.k + '&accion=widget'));
   if (p.accion === 'datos') {
     try {
@@ -246,11 +246,17 @@ function textoHoy_() {
   return 'Hoy a las ' + x.hora + ': ' + PLAN.titulo(x.tipo) + '. ' + PLAN.detalle(E, x) + '.';
 }
 
-function widget_() {
+function widget_(k) {
   const E = PLAN.estado(registro_());
   const hoy = diaDe_(new Date());
   const x = PLAN.dia(E, hoy);
+  let m = null;
+  for (let i = 1; i < 8 && !m; i++) { const y = PLAN.dia(E, PLAN.diaMas(hoy, i)); if (y.tipo && !y.pausa && !y.saltado) m = y; }
+  const runs = E.rodilla.filter(r => r.k === 'run');
   return {
+    app: WEB + '?api=' + idDe_(ScriptApp.getService().getUrl()) + '&k=' + encodeURIComponent(k || ''),
+    manana: m ? { titulo: (m.dia === PLAN.diaMas(hoy, 1) ? '' : PLAN.DIAS[PLAN.semanaDia(m.dia)].slice(0, 3) + ' · ') + PLAN.titulo(m.tipo), hora: m.hora } : null,
+    rodilla: runs.length ? runs[runs.length - 1].v : null,
     hoy: { titulo: x.pausa ? x.pausa : PLAN.titulo(x.tipo), hora: x.hora, clase: x.pausa ? 'off' : PLAN.clase(x.tipo), hecho: !!x.hecho, detalle: PLAN.detalle(E, x) },
     semana: PLAN.semana(E, PLAN.lunes(hoy)).map(d => ({ letra: 'LMXJVSD'[PLAN.semanaDia(d.dia)], clase: d.pausa ? 'off' : PLAN.clase(d.tipo), hecho: !!d.hecho, hoy: d.dia === hoy })),
     correr: E.correr.sem < PLAN.CORRER.length ? 'Semana ' + (E.correr.sem + 1) + ' de 9 · ' + E.correr.hechas + '/3' : PLAN.faseDe(hoy).n,
@@ -258,42 +264,9 @@ function widget_() {
   };
 }
 
-const SCRIPTABLE_ = `// Widget de Tangerine para Scriptable. Pega esto en un script nuevo.
-const URL = '__URL__';
-const C = { fondo: '#0e0c0b', texto: '#f6f2ee', gris: '#a59c93', tenue: '#70685f', cal: '#ff9a3c', run: '#5ec4ff', mov: '#8de0ae', off: '#322c27' };
-const col = c => new Color(c);
-let d;
-try { d = await new Request(URL).loadJSON(); } catch (e) { d = null; }
-const w = new ListWidget();
-w.backgroundColor = col(C.fondo);
-w.setPadding(14, 14, 14, 14);
-w.url = URL.replace('&accion=widget', '');
-function texto(pila, t, color, fuente) { const x = pila.addText(t); x.textColor = col(color); x.font = fuente; x.lineLimit = 1; return x; }
-if (!d || d.error) {
-  texto(w, 'Tangerine', C.cal, Font.boldSystemFont(16));
-  texto(w, d && d.error ? d.error : 'Sin conexión', C.gris, Font.systemFont(12));
-} else {
-  texto(w, d.hoy.hecho ? 'HOY · HECHO' : 'HOY · ' + d.hoy.hora, C.gris, Font.semiboldSystemFont(11));
-  w.addSpacer(2);
-  texto(w, d.hoy.titulo + (d.hoy.hecho ? ' ✓' : ''), C[d.hoy.clase] || C.texto, Font.boldSystemFont(20));
-  w.addSpacer(8);
-  const fila = w.addStack();
-  fila.spacing = 5;
-  d.semana.forEach(s => {
-    const p = fila.addStack();
-    p.size = new Size(16, 16);
-    p.cornerRadius = 8;
-    p.backgroundColor = s.hecho ? col(C[s.clase] || C.off) : col(C.off);
-    if (s.hoy) { p.borderWidth = 2; p.borderColor = col(C.texto); }
-  });
-  w.addSpacer();
-  texto(w, d.correr, C.run, Font.semiboldSystemFont(12));
-  texto(w, 'Media de la Maresme: ' + d.carrera + ' semanas', C.tenue, Font.systemFont(11));
-}
-Script.setWidget(w);
-Script.complete();
-if (config.runsInApp) w.presentSmall();
-`;
+// <scriptable>
+const SCRIPTABLE_ = "// Tangerine · widget para Scriptable (pequeño, mediano y pantalla de bloqueo).\n// Cópialo desde Tangerine → ⋯ → Widget del iPhone: así la dirección de tu servidor ya viene puesta.\nconst URL = '__URL__';\nconst C = { fondo: '#0e0c0b', caja: '#181513', texto: '#f6f2ee', gris: '#a59c93', tenue: '#70685f', cal: '#ff9a3c', run: '#5ec4ff', mov: '#8de0ae', off: '#322c27', mal: '#ff6b5e' };\nconst col = c => new Color(c);\nconst fam = config.widgetFamily || 'medium';\n\n// Datos del servidor; sin conexión, los últimos que se guardaron.\nlet d = null;\ntry {\n  const r = new Request(URL);\n  r.timeoutInterval = 10;\n  d = await r.loadJSON();\n} catch (e) {}\nconst fm = FileManager.local();\nconst cache = fm.joinPath(fm.documentsDirectory(), 'tangerine-widget.json');\nif (d && !d.error) fm.writeString(cache, JSON.stringify(d));\nelse if ((!d || !d.error) && fm.fileExists(cache)) d = Object.assign(JSON.parse(fm.readString(cache)), { viejo: true });\n\nconst w = new ListWidget();\nw.backgroundColor = col(C.fondo);\nw.refreshAfterDate = new Date(Date.now() + 30 * 60000);\nif (d && d.app) w.url = d.app;\n\nfunction texto(pila, t, color, fuente, lineas) {\n  const x = pila.addText(String(t));\n  x.textColor = col(color);\n  x.font = fuente;\n  x.lineLimit = lineas || 1;\n  x.minimumScaleFactor = 0.8;\n  return x;\n}\nfunction puntos(pila, tam, letras) {\n  const fila = pila.addStack();\n  fila.spacing = tam > 14 ? 6 : 4;\n  d.semana.forEach(s => {\n    const col1 = fila.addStack();\n    col1.layoutVertically();\n    col1.spacing = 3;\n    if (letras) texto(col1, s.letra, s.hoy ? C.texto : C.tenue, Font.semiboldSystemFont(9));\n    const p = col1.addStack();\n    p.size = new Size(tam, tam);\n    p.cornerRadius = tam / 2;\n    p.backgroundColor = col(s.hecho ? (C[s.clase] || C.off) : C.off);\n    if (s.hoy) { p.borderWidth = 2; p.borderColor = col(C.texto); }\n  });\n}\nconst eti = () => d.hoy.hecho ? 'HOY · HECHO' : d.hoy.clase === 'off' ? 'HOY' : 'HOY · ' + d.hoy.hora;\nconst titulo = () => d.hoy.titulo + (d.hoy.hecho ? ' ✓' : '');\n\nif (!d || d.error) {\n  w.setPadding(14, 14, 14, 14);\n  texto(w, 'Tangerine', C.cal, Font.boldSystemFont(16));\n  texto(w, d && d.error ? d.error : 'Sin conexión', C.gris, Font.systemFont(12), 2);\n} else if (fam === 'accessoryInline') {\n  texto(w, (d.hoy.hecho ? '✓ ' : '') + d.hoy.titulo + (d.hoy.hecho || d.hoy.clase === 'off' ? '' : ' · ' + d.hoy.hora), C.texto, Font.systemFont(12));\n} else if (fam === 'accessoryCircular') {\n  w.addSpacer();\n  const c = texto(w, d.carrera, C.texto, Font.boldSystemFont(18));\n  c.centerAlignText();\n  const s = texto(w, 'sem', C.texto, Font.systemFont(10));\n  s.centerAlignText();\n  w.addSpacer();\n} else if (fam === 'accessoryRectangular') {\n  texto(w, 'TANGERINE', C.texto, Font.semiboldSystemFont(10));\n  texto(w, titulo() + (d.hoy.hecho || d.hoy.clase === 'off' ? '' : ' · ' + d.hoy.hora), C.texto, Font.boldSystemFont(14));\n  texto(w, d.manana ? 'Mañana: ' + d.manana.titulo + ' ' + d.manana.hora : d.correr, C.texto, Font.systemFont(11));\n} else if (fam === 'small') {\n  w.setPadding(14, 14, 12, 14);\n  texto(w, eti(), C.gris, Font.semiboldSystemFont(10));\n  w.addSpacer(3);\n  texto(w, titulo(), C[d.hoy.clase] || C.texto, Font.boldSystemFont(19), 2);\n  w.addSpacer(2);\n  texto(w, d.hoy.detalle, C.tenue, Font.systemFont(10), 2);\n  w.addSpacer();\n  puntos(w, 13, false);\n  w.addSpacer(6);\n  texto(w, d.viejo ? 'Sin conexión' : d.correr, d.viejo ? C.tenue : C.run, Font.semiboldSystemFont(10));\n} else {\n  // Mediano y grande: hoy a la izquierda, la semana y lo demás a la derecha.\n  w.setPadding(14, 16, 14, 16);\n  const fila = w.addStack();\n  const izq = fila.addStack();\n  izq.layoutVertically();\n  izq.size = new Size(150, 0);\n  texto(izq, eti(), C.gris, Font.semiboldSystemFont(10));\n  izq.addSpacer(3);\n  texto(izq, titulo(), C[d.hoy.clase] || C.texto, Font.boldSystemFont(22), 2);\n  izq.addSpacer(3);\n  texto(izq, d.hoy.detalle, C.tenue, Font.systemFont(11), 3);\n  izq.addSpacer();\n  if (d.manana) texto(izq, 'Mañana ' + d.manana.hora + ' · ' + d.manana.titulo, C.gris, Font.systemFont(11));\n  fila.addSpacer();\n  const der = fila.addStack();\n  der.layoutVertically();\n  puntos(der, 15, true);\n  der.addSpacer(10);\n  texto(der, d.correr, C.run, Font.semiboldSystemFont(11));\n  if (d.rodilla != null) texto(der, 'Rodilla: ' + d.rodilla + ' de 10', d.rodilla > 3 ? C.mal : C.gris, Font.systemFont(11));\n  der.addSpacer();\n  texto(der, d.viejo ? 'Sin conexión · datos guardados' : 'Maresme: ' + d.carrera + ' semanas', C.tenue, Font.systemFont(10));\n}\n\nScript.setWidget(w);\nScript.complete();\nif (config.runsInApp) fam === 'small' ? w.presentSmall() : w.presentMedium();\n";
+// </scriptable>
 
 // ---------- Instalación ----------
 
@@ -353,8 +326,8 @@ function idDe_(exec) {
 // Lógica de Tangerine: qué toca cada día, escalones, correr, pruebas, recolocar y resumen semanal.
 // Son funciones puras sobre el registro. Este bloque se copia en Codigo.gs y Panel.html con `node sincronizar.js`.
 const PLAN = (() => {
-  const INICIO = '2026-11-02'; // lunes de la primera semana (correr empieza el martes 3)
-  const INICIO_CAL = '2026-11-09'; // la calistenia empieza una semana después; A/B y la prueba cuentan desde aquí
+  const INICIO = '2026-11-09'; // lunes de la primera semana: todo empieza aquí (lo decidió Toon el 30/10)
+  const INICIO_CAL = INICIO; // A/B y la prueba de cada 4 semanas cuentan desde aquí
   const CARRERA = { nombre: 'Mitja Marató Costa Barcelona Maresme', corto: 'Media de la Maresme', dia: '2027-10-31', lugar: 'Pineda de Mar → Calella' };
   // Lunes a domingo. 'cal' se convierte en A o B según la semana; el viernes de cada 4.ª semana es la prueba.
   const SEMANA = ['cal', 'run', 'cal', 'run', 'cal', 'sab', 'run'];
@@ -404,7 +377,7 @@ const PLAN = (() => {
     { r: 2, c: 720, a: 60 }, { r: 1, c: 1200 }, { r: 1, c: 1500 }, { r: 1, c: 1800 },
   ];
   const FASES = [
-    { desde: '2026-11-02', n: 'Andar y correr', corto: '→ 30′' },
+    { desde: '2026-11-09', n: 'Andar y correr', corto: '→ 30′' },
     { desde: '2027-01-11', n: 'Base', corto: 'Base' },
     { desde: '2027-05-03', n: '10K cómodo', corto: '10K' },
     { desde: '2027-07-12', n: 'Plan de media', corto: 'Media' },

@@ -829,8 +829,8 @@ function bucle(now) {
 // Lógica de Tangerine: qué toca cada día, escalones, correr, pruebas, recolocar y resumen semanal.
 // Son funciones puras sobre el registro. Este bloque se copia en Codigo.gs y Panel.html con `node sincronizar.js`.
 const PLAN = (() => {
-  const INICIO = '2026-11-02'; // lunes de la primera semana (correr empieza el martes 3)
-  const INICIO_CAL = '2026-11-09'; // la calistenia empieza una semana después; A/B y la prueba cuentan desde aquí
+  const INICIO = '2026-11-09'; // lunes de la primera semana: todo empieza aquí (lo decidió Toon el 30/10)
+  const INICIO_CAL = INICIO; // A/B y la prueba de cada 4 semanas cuentan desde aquí
   const CARRERA = { nombre: 'Mitja Marató Costa Barcelona Maresme', corto: 'Media de la Maresme', dia: '2027-10-31', lugar: 'Pineda de Mar → Calella' };
   // Lunes a domingo. 'cal' se convierte en A o B según la semana; el viernes de cada 4.ª semana es la prueba.
   const SEMANA = ['cal', 'run', 'cal', 'run', 'cal', 'sab', 'run'];
@@ -880,7 +880,7 @@ const PLAN = (() => {
     { r: 2, c: 720, a: 60 }, { r: 1, c: 1200 }, { r: 1, c: 1500 }, { r: 1, c: 1800 },
   ];
   const FASES = [
-    { desde: '2026-11-02', n: 'Andar y correr', corto: '→ 30′' },
+    { desde: '2026-11-09', n: 'Andar y correr', corto: '→ 30′' },
     { desde: '2027-01-11', n: 'Base', corto: 'Base' },
     { desde: '2027-05-03', n: '10K cómodo', corto: '10K' },
     { desde: '2027-07-12', n: 'Plan de media', corto: 'Media' },
@@ -1445,7 +1445,7 @@ const PLAN = (() => {
         <div class="leyenda"><span><i></i>Calistenia</span><span><i class="k-run"></i>Correr</span><span><i class="k-mov"></i>Movilidad</span></div></section>
       ${tarjetaRodilla()}
       <section class="tarjeta"><span class="eti">Camino al muscle-up</span>
-        <ol class="camino"><li class="ok"><i>${ico.check}</i><b>Negativas</b><em>desde el ${Number(P.INICIO.slice(8))}/11</em></li>${hit.map((x, i) => `<li class="${x.hecho ? 'ok' : i === iAct ? 'act' : ''}"><i>${x.hecho ? ico.check : ''}</i><b>${x.n}</b><em>${x.hecho ? 'hecho' : esc(x.cuando)}</em></li>`).join('')}</ol>
+        <ol class="camino"><li class="ok"><i>${ico.check}</i><b>Negativas</b><em>desde el ${Number(P.INICIO.slice(8))}/${Number(P.INICIO.slice(5, 7))}</em></li>${hit.map((x, i) => `<li class="${x.hecho ? 'ok' : i === iAct ? 'act' : ''}"><i>${x.hecho ? ico.check : ''}</i><b>${x.n}</b><em>${x.hecho ? 'hecho' : esc(x.cuando)}</em></li>`).join('')}</ol>
         <table class="tabla"><thead><tr><th>Prueba</th><th>Dominadas</th><th>Fondos</th><th>Flexiones</th></tr></thead><tbody>${pr.slice(-5).map(p => `<tr><td>${p.inicial ? 'Punto de partida' : P.corta(p.dia)}</td><td>${p.dominadas}</td><td>${p.fondos}</td><td>${p.flexiones}</td></tr>`).join('')}</tbody></table>
         <p class="peq">Las fechas se recalculan con cada prueba (cada 4 semanas).</p></section>
       <section class="tarjeta"><span class="eti">Camino a la media</span>
