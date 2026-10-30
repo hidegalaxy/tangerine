@@ -1,0 +1,696 @@
+/**
+ * Tangerine: tu entreno (calistenia, volver a correr y movilidad).
+ *
+ * Una vez: pega este archivo y Panel.html en un proyecto de script.google.com,
+ * ejecuta configurar() y publícalo como aplicación web
+ * (Ejecutar como: yo · Quién tiene acceso: cualquier usuario).
+ * Al actualizar el código, vuelve a ejecutar configurar(): añade lo que falte sin tocar tus datos.
+ */
+
+const TZ = 'Europe/Madrid';
+
+// Todo lo que apuntas va a un registro en el que solo se añade: así nada se pierde y el móvil puede reenviar sin duplicar.
+const ESQUEMA = {
+  Registro: ['id', 'cuando', 'tipo', 'dia', 'datos'],
+};
+// Días que el servidor mantiene en Google Calendar, desde hoy.
+const DIAS_CALENDARIO = 14;
+// Color «Mandarina» de Google Calendar y aviso 10 min antes.
+const COLOR_CAL = '6';
+const AVISO_MIN = 10;
+const WEB = 'https://hidegalaxy.github.io/tangerine/';
+
+function configurar() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('HOJA')) {
+    try {
+      SpreadsheetApp.openById(props.getProperty('HOJA'));
+    } catch (err) {
+      ['HOJA', 'CLAVE', 'CAL', 'CALENDARIO'].forEach(p => props.deleteProperty(p));
+    }
+  }
+  if (!props.getProperty('HOJA')) {
+    const nuevo = SpreadsheetApp.create('Tangerine');
+    nuevo.setSpreadsheetTimeZone(TZ);
+    nuevo.setSpreadsheetLocale('es_ES');
+    nuevo.getSheets()[0].setName('Registro');
+    props.setProperty('HOJA', nuevo.getId());
+  }
+  const ss = libro_();
+  Object.keys(ESQUEMA).forEach(nombre => {
+    const h = ss.getSheetByName(nombre) || ss.insertSheet(nombre);
+    const ultima = h.getLastColumn();
+    const cab = ultima ? h.getRange(1, 1, 1, ultima).getValues()[0].map(String) : [];
+    const faltan = ESQUEMA[nombre].filter(c => cab.indexOf(c) < 0);
+    if (faltan.length) h.getRange(1, cab.length + 1, 1, faltan.length).setValues([faltan]);
+    h.setFrozenRows(1);
+    // Fechas y JSON como texto: que la hoja no los convierta en fechas ni números.
+    h.getRange('A:E').setNumberFormat('@');
+  });
+  const cal = CalendarApp.getDefaultCalendar();
+  if (!props.getProperty('CAL')) props.setProperty('CAL', cal.getId());
+  if (!props.getProperty('CALENDARIO')) props.setProperty('CALENDARIO', 'si');
+  if (!props.getProperty('CLAVE')) props.setProperty('CLAVE', Utilities.getUuid().replace(/-/g, '').slice(0, 16));
+  // Cada madrugada pone en el calendario los días que entran en las dos semanas siguientes.
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'diario').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('diario').timeBased().everyDays(1).atHour(4).inTimezone(TZ).create();
+  sincronizar_();
+  Logger.log('Calendario: ' + cal.getName());
+  Logger.log('Hoja: ' + ss.getUrl());
+  Logger.log('Clave: ' + props.getProperty('CLAVE'));
+}
+
+function diario() {
+  sincronizar_();
+}
+
+// ---------- Web ----------
+
+// GET ?k=CLAVE                     → app
+// GET ?k=CLAVE&accion=datos        → registro en JSON (para la web propia)
+// GET ?k=CLAVE&accion=hoy          → qué toca hoy, en texto (atajo y Siri)
+// GET ?k=CLAVE&accion=widget       → datos del widget de Scriptable
+// GET ?k=CLAVE&accion=scriptable   → código del widget, listo para copiar
+// GET (sin clave) o ?accion=instalar → página para instalar Tangerine en el iPhone
+function doGet(e) {
+  const p = e.parameter;
+  if (p.accion === 'instalar' || (!p.k && !p.accion)) return paginaInstalar_(p.k);
+  if (!claveValida_(p.k)) return p.accion === 'datos' || p.accion === 'widget' ? json_({ error: 'Clave incorrecta' }) : texto_('Clave incorrecta');
+  if (p.accion === 'hoy') return texto_(textoHoy_());
+  if (p.accion === 'widget') return json_(widget_());
+  if (p.accion === 'scriptable') return texto_(SCRIPTABLE_.replace('__URL__', ScriptApp.getService().getUrl() + '?k=' + p.k + '&accion=widget'));
+  if (p.accion === 'datos') {
+    try {
+      return json_(datos_());
+    } catch (err) {
+      return json_({ error: err.message });
+    }
+  }
+  const t = HtmlService.createTemplateFromFile('Panel');
+  t.clave = p.k;
+  return t.evaluate()
+    .setTitle('Tangerine')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+}
+
+// POST { api: 'accion', k, que, d } desde la web propia → JSON.
+function doPost(e) {
+  let d;
+  try {
+    d = JSON.parse(e.postData.contents);
+  } catch (err) {
+    d = e.parameter || {};
+  }
+  if (!d.k && e.parameter && e.parameter.k) d.k = e.parameter.k;
+  try {
+    return json_(accion(d.k, d.que, d.d));
+  } catch (err) {
+    return json_({ error: err.message });
+  }
+}
+
+// ---------- Llamadas de la app ----------
+
+function datos(k) {
+  comprobar_(k);
+  return datos_();
+}
+
+function accion(k, que, d) {
+  comprobar_(k);
+  if (!ACCIONES_[que]) throw new Error('Acción desconocida: ' + que);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  let r;
+  try {
+    r = ACCIONES_[que](d || {});
+  } finally {
+    lock.releaseLock();
+  }
+  return { msg: (r && r.msg) || '', ids: (r && r.ids) || [], datos: datos_() };
+}
+
+const TIPOS_REGISTRO_ = ['sesion', 'rodilla', 'mover', 'saltar', 'pausa', 'quitarPausa', 'deshacer'];
+
+const ACCIONES_ = {
+  // Añade entradas del móvil. Las que ya estaban (mismo id) se ignoran: reenviar no duplica.
+  anadir: d => {
+    const entradas = Array.isArray(d.entradas) ? d.entradas : [];
+    const ya = new Set(leer_('Registro').map(r => String(r.id)));
+    const ids = [];
+    let nuevas = 0;
+    entradas.forEach(en => {
+      const id = String(en.id || '');
+      if (!/^[\w-]{4,40}$/.test(id)) return;
+      if (!TIPOS_REGISTRO_.includes(en.tipo)) return;
+      ids.push(id);
+      if (ya.has(id)) return;
+      const resto = {};
+      Object.keys(en).forEach(c => { if (['id', 'cuando', 'tipo'].indexOf(c) < 0) resto[c] = en[c]; });
+      const cuando = /^\d{4}-\d{2}-\d{2}T/.test(String(en.cuando)) ? String(en.cuando) : new Date().toISOString();
+      anadir_('Registro', { id, cuando, tipo: en.tipo, dia: String(en.dia || en.de || en.desde || ''), datos: JSON.stringify(resto) });
+      ya.add(id);
+      nuevas++;
+    });
+    if (nuevas) sincronizar_();
+    return { ids, msg: nuevas ? 'Guardado' : '' };
+  },
+  ajuste: d => {
+    const props = PropertiesService.getScriptProperties();
+    if (d.calendario != null) {
+      props.setProperty('CALENDARIO', d.calendario ? 'si' : 'no');
+      sincronizar_();
+    }
+    return { msg: 'Hecho' };
+  },
+};
+
+function datos_() {
+  return {
+    log: registro_(),
+    hoy: diaDe_(new Date()),
+    calendario: PropertiesService.getScriptProperties().getProperty('CALENDARIO') !== 'no',
+  };
+}
+
+function registro_() {
+  return leer_('Registro').map(r => {
+    let resto = {};
+    try { resto = JSON.parse(String(r.datos || '{}')); } catch (err) {}
+    const cuando = r.cuando instanceof Date ? r.cuando.toISOString() : String(r.cuando);
+    return Object.assign(resto, { id: String(r.id), cuando, tipo: String(r.tipo) });
+  });
+}
+
+// ---------- Google Calendar ----------
+
+// Deja en el calendario exactamente lo que toca de hoy a DIAS_CALENDARIO días: crea, cambia o borra.
+function sincronizar_() {
+  const props = PropertiesService.getScriptProperties();
+  const cal = CalendarApp.getCalendarById(props.getProperty('CAL') || '') || CalendarApp.getDefaultCalendar();
+  const hoy = diaDe_(new Date());
+  const desde = Utilities.parseDate(hoy + ' 00:00', TZ, 'yyyy-MM-dd HH:mm');
+  const hasta = Utilities.parseDate(PLAN.diaMas(hoy, DIAS_CALENDARIO) + ' 00:00', TZ, 'yyyy-MM-dd HH:mm');
+  const existentes = {};
+  cal.getEvents(desde, hasta).forEach(ev => {
+    const tag = ev.getTag('tangerine');
+    if (tag) existentes[tag] ? ev.deleteEvent() : (existentes[tag] = ev);
+  });
+  const quiero = {};
+  if (props.getProperty('CALENDARIO') !== 'no') {
+    const E = PLAN.estado(registro_());
+    for (let i = 0; i < DIAS_CALENDARIO; i++) {
+      const x = PLAN.dia(E, PLAN.diaMas(hoy, i));
+      if (!x.tipo || x.pausa || x.saltado) continue;
+      quiero[x.dia] = {
+        titulo: (x.hecho ? '✓ ' : '') + PLAN.titulo(x.tipo) + ' · Tangerine',
+        inicio: Utilities.parseDate(x.dia + ' ' + ('0' + x.hora).slice(-5), TZ, 'yyyy-MM-dd HH:mm'),
+        min: duracion_(E, x),
+        desc: PLAN.detalle(E, x),
+      };
+    }
+  }
+  Object.keys(existentes).forEach(dia => { if (!quiero[dia]) existentes[dia].deleteEvent(); });
+  Object.keys(quiero).forEach(dia => {
+    const q = quiero[dia], fin = new Date(q.inicio.getTime() + q.min * 60000);
+    let ev = existentes[dia];
+    if (!ev) {
+      ev = cal.createEvent(q.titulo, q.inicio, fin, { description: q.desc });
+      ev.setTag('tangerine', dia);
+      ev.setColor(COLOR_CAL);
+      ev.removeAllReminders();
+      ev.addPopupReminder(AVISO_MIN);
+      return;
+    }
+    if (ev.getTitle() !== q.titulo) ev.setTitle(q.titulo);
+    if (ev.getStartTime().getTime() !== q.inicio.getTime() || ev.getEndTime().getTime() !== fin.getTime()) ev.setTime(q.inicio, fin);
+    if (ev.getDescription() !== q.desc) ev.setDescription(q.desc);
+  });
+}
+
+function duracion_(E, x) {
+  if (x.tipo === 'A' || x.tipo === 'B') return 50;
+  if (x.tipo === 'test') return 30;
+  if (x.tipo === 'run') return PLAN.minutos(PLAN.tramosCorrer(E.correr.sem, PLAN.semanaDia(x.dia) === 6));
+  return PLAN.minutos(PLAN.tramosMov('sab'));
+}
+
+// ---------- Atajo, Siri y widget ----------
+
+function textoHoy_() {
+  const E = PLAN.estado(registro_());
+  const x = PLAN.dia(E, diaDe_(new Date()));
+  if (x.pausa) return 'Hoy no entrenas: ' + x.pausa + '.';
+  if (!x.tipo || x.saltado) return 'Hoy descansas.';
+  if (x.hecho) return PLAN.titulo(x.tipo) + ': hecho. ¡Bien!';
+  return 'Hoy a las ' + x.hora + ': ' + PLAN.titulo(x.tipo) + '. ' + PLAN.detalle(E, x) + '.';
+}
+
+function widget_() {
+  const E = PLAN.estado(registro_());
+  const hoy = diaDe_(new Date());
+  const x = PLAN.dia(E, hoy);
+  return {
+    hoy: { titulo: x.pausa ? x.pausa : PLAN.titulo(x.tipo), hora: x.hora, clase: x.pausa ? 'off' : PLAN.clase(x.tipo), hecho: !!x.hecho, detalle: PLAN.detalle(E, x) },
+    semana: PLAN.semana(E, PLAN.lunes(hoy)).map(d => ({ letra: 'LMXJVSD'[PLAN.semanaDia(d.dia)], clase: d.pausa ? 'off' : PLAN.clase(d.tipo), hecho: !!d.hecho, hoy: d.dia === hoy })),
+    correr: E.correr.sem < PLAN.CORRER.length ? 'Semana ' + (E.correr.sem + 1) + ' de 9 · ' + E.correr.hechas + '/3' : PLAN.faseDe(hoy).n,
+    carrera: Math.ceil(PLAN.entre(hoy, PLAN.CARRERA.dia) / 7),
+  };
+}
+
+const SCRIPTABLE_ = `// Widget de Tangerine para Scriptable. Pega esto en un script nuevo.
+const URL = '__URL__';
+const C = { fondo: '#0e0c0b', texto: '#f6f2ee', gris: '#a59c93', tenue: '#70685f', cal: '#ff9a3c', run: '#5ec4ff', mov: '#8de0ae', off: '#322c27' };
+const col = c => new Color(c);
+let d;
+try { d = await new Request(URL).loadJSON(); } catch (e) { d = null; }
+const w = new ListWidget();
+w.backgroundColor = col(C.fondo);
+w.setPadding(14, 14, 14, 14);
+w.url = URL.replace('&accion=widget', '');
+function texto(pila, t, color, fuente) { const x = pila.addText(t); x.textColor = col(color); x.font = fuente; x.lineLimit = 1; return x; }
+if (!d || d.error) {
+  texto(w, 'Tangerine', C.cal, Font.boldSystemFont(16));
+  texto(w, d && d.error ? d.error : 'Sin conexión', C.gris, Font.systemFont(12));
+} else {
+  texto(w, d.hoy.hecho ? 'HOY · HECHO' : 'HOY · ' + d.hoy.hora, C.gris, Font.semiboldSystemFont(11));
+  w.addSpacer(2);
+  texto(w, d.hoy.titulo + (d.hoy.hecho ? ' ✓' : ''), C[d.hoy.clase] || C.texto, Font.boldSystemFont(20));
+  w.addSpacer(8);
+  const fila = w.addStack();
+  fila.spacing = 5;
+  d.semana.forEach(s => {
+    const p = fila.addStack();
+    p.size = new Size(16, 16);
+    p.cornerRadius = 8;
+    p.backgroundColor = s.hecho ? col(C[s.clase] || C.off) : col(C.off);
+    if (s.hoy) { p.borderWidth = 2; p.borderColor = col(C.texto); }
+  });
+  w.addSpacer();
+  texto(w, d.correr, C.run, Font.semiboldSystemFont(12));
+  texto(w, 'Media de la Maresme: ' + d.carrera + ' semanas', C.tenue, Font.systemFont(11));
+}
+Script.setWidget(w);
+Script.complete();
+if (config.runsInApp) w.presentSmall();
+`;
+
+// ---------- Instalación ----------
+
+function paginaInstalar_(k) {
+  const exec = ScriptApp.getService().getUrl();
+  const ok = claveValida_(k);
+  const enlaceApp = WEB + '?api=' + idDe_(exec) + '&k=' + encodeURIComponent(k || '');
+  if (ok) enviarEnlaces_(enlaceApp, exec + '?k=' + encodeURIComponent(k || ''));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const cuerpo = ok
+    ? '<h1>¡Tu Tangerine está lista!</h1>' +
+      '<p>Escanea este código con la <b>cámara del iPhone</b> y abre el enlace en Safari.<br><i>Escaneja aquest codi amb la càmera de l\'iPhone i obre l\'enllaç a Safari.</i></p>' +
+      '<div id="qr"></div>' +
+      '<p class="peq">También te lo hemos enviado por correo. · <i>També te l\'hem enviat per correu.</i></p>' +
+      '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>' +
+      '<script>new QRCode(document.getElementById("qr"), { text: ' + JSON.stringify(enlaceApp) + ', width: 260, height: 260, colorDark: "#0e0c0b", colorLight: "#ffffff" });</script>'
+    : '<h1>Instalar Tangerine</h1>' +
+      '<p>Pega la <b>clave</b> que salió en el registro al ejecutar <b>configurar</b>.<br><i>Enganxa la clau que va sortir al registre en executar configurar.</i></p>' +
+      (k ? '<p class="mal">Esa clave no es correcta. · <i>Aquesta clau no és correcta.</i></p>' : '') +
+      '<form method="get" action="' + esc(exec) + '" target="_top"><input type="hidden" name="accion" value="instalar">' +
+      '<input name="k" placeholder="Clave · Clau" autocomplete="off" required><button>Continuar</button></form>';
+  const html = '<!doctype html><html lang="es"><head><meta charset="utf-8"><style>' +
+    'body{margin:0;background:#0e0c0b;color:#f6f2ee;font:17px/1.45 system-ui,-apple-system,sans-serif;display:flex;justify-content:center}' +
+    'main{max-width:460px;padding:40px 24px;text-align:center}h1{font-size:30px;margin:18px 0 10px}' +
+    '.logo{width:84px;height:84px;border-radius:20px;background:#ff9a3c;margin:0 auto;display:flex;align-items:center;justify-content:center}' +
+    '#qr{display:inline-block;background:#fff;padding:16px;border-radius:18px;margin:14px 0}i{color:#a59c93}.peq{font-size:14px}.mal{color:#ff6b5e}' +
+    'input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #322c27;background:#181513;color:#f6f2ee;font-size:15px;margin:8px 0}' +
+    'button{width:100%;padding:14px;border:0;border-radius:14px;background:#ff9a3c;color:#0e0c0b;font-weight:700;font-size:17px;cursor:pointer}' +
+    '</style></head><body><main><div class="logo">' + LOGO_SVG_ + '</div>' + cuerpo + '</main></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('Instalar Tangerine')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+const LOGO_SVG_ = '<svg width="54" height="54" viewBox="0 0 32 32"><circle cx="16" cy="18" r="11" fill="#0e0c0b"/><path d="M16 7c1-3 4-4.5 7-4-.5 3-3 5-7 4z" fill="#0e0c0b"/></svg>';
+
+function enviarEnlaces_(enlaceApp, enlaceAtajo) {
+  const props = PropertiesService.getScriptProperties();
+  const antes = Number(props.getProperty('ENLACES_ENVIADOS') || 0);
+  if (Date.now() - antes < 10 * 60000) return;
+  props.setProperty('ENLACES_ENVIADOS', String(Date.now()));
+  MailApp.sendEmail(
+    Session.getEffectiveUser().getEmail(),
+    'Tus enlaces de Tangerine · Els teus enllaços de Tangerine',
+    '1) Abre esto en el iPhone (Safari) y añádelo a la pantalla de inicio:\n' +
+    '   Obre això a l\'iPhone (Safari) i afegeix-ho a la pantalla d\'inici:\n\n' + enlaceApp + '\n\n' +
+    '2) Dirección para el atajo «Entreno de hoy» y el widget:\n' +
+    '   Adreça per a la drecera i el widget:\n\n' + enlaceAtajo + '\n\n' +
+    'No compartas estos enlaces: llevan tu clave. · No comparteixis aquests enllaços: porten la teva clau.'
+  );
+}
+
+function idDe_(exec) {
+  return (String(exec || '').match(/\/s\/([\w-]+)\//) || [])[1] || '';
+}
+
+// <plan>
+// Lógica de Tangerine: qué toca cada día, escalones, correr, pruebas, recolocar y resumen semanal.
+// Son funciones puras sobre el registro. Este bloque se copia en Codigo.gs y Panel.html con `node sincronizar.js`.
+const PLAN = (() => {
+  const INICIO = '2026-11-02'; // lunes de la primera semana
+  const CARRERA = { nombre: 'Mitja Marató Costa Barcelona Maresme', corto: 'Media de la Maresme', dia: '2027-10-31', lugar: 'Pineda de Mar → Calella' };
+  // Lunes a domingo. 'cal' se convierte en A o B según la semana; el viernes de cada 4.ª semana es la prueba.
+  const SEMANA = ['cal', 'run', 'cal', 'run', 'cal', 'sab', 'run'];
+  const HORA = ['6:15', '6:15', '6:15', '6:15', '6:15', '8:30', '9:30'];
+  const PAUSAS = [
+    { desde: '2026-12-06', hasta: '2026-12-09', motivo: 'Florencia' },
+    { desde: '2026-12-27', hasta: '2026-12-30', motivo: 'Salida de Navidad' },
+  ];
+  const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  // Escaleras de progresión (rutinas.md). paso = escalón con el que se empieza.
+  const EJ = {
+    negativas: { n: 'Negativas de dominada', nota: 'Salta arriba y baja en 5 s', r: [3, 5], paso: 0, grupo: 'Tirón', esc: ['Negativas', '1–3 dominadas + negativas', 'Dominadas 3 × 5–8', 'Dominadas pecho a barra', 'Dominadas explosivas', 'Muscle-up'] },
+    supinas: { n: 'Negativas con agarre supino', nota: 'Antes, 8 scapular pulls', r: [3, 5], paso: 0, grupo: 'Tirón', esc: ['Negativas supinas', 'Chin-ups 3 × 5–8', 'Chin-ups lentas'] },
+    remo: { n: 'Remo entre las paralelas', nota: 'Tumbado entre las dos barras', r: [8, 12], paso: 0, grupo: 'Tirón', esc: ['Rodillas dobladas', 'Piernas rectas', 'Pies elevados', 'Remo arquero'] },
+    colgado: { n: 'Colgado de la barra', u: 's', r: [30, 45], paso: 0, grupo: 'Tirón', esc: ['Pasivo', 'Activo, escápulas abajo'] },
+    fondos: { n: 'Fondos en paralelas', r: [5, 8], paso: 0, grupo: 'Empuje', esc: ['Fondos', 'Fondos bajando en 3 s', 'Fondos 3 × 12', 'Fondos en barra recta'] },
+    aguante: { n: 'Aguante arriba en paralelas', nota: 'Brazos bloqueados, hombros abajo', u: 's', r: [20, 40], paso: 0, grupo: 'Empuje', esc: ['Aguante', 'Negativas de fondo en 5 s'] },
+    flexiones: { n: 'Flexiones', r: [10, 15], paso: 0, grupo: 'Empuje', esc: ['Flexiones', 'Diamante', 'Arquero', 'Pseudo planche'] },
+    pike: { n: 'Pike push-ups', r: [6, 10], paso: 0, grupo: 'Empuje', esc: ['Pies en el suelo', 'Pies en una silla', 'Pino contra la pared'] },
+    bulgara: { n: 'Sentadilla búlgara', nota: 'Pie de atrás en una silla · por pierna', r: [8, 12], paso: 1, grupo: 'Pierna y cadera', esc: ['Sentadilla a una silla', 'Búlgara', 'Búlgara con mochila'] },
+    stepdown: { n: 'Step-down lateral', nota: 'Desde un escalón · baja despacio · por pierna', r: [8, 12], paso: 0, grupo: 'Pierna y cadera', esc: ['Escalón bajo', 'Escalón alto', 'Con mochila'] },
+    puente: { n: 'Puente de glúteo a una pierna', nota: 'Por pierna', r: [10, 15], paso: 0, grupo: 'Pierna y cadera', esc: ['En el suelo', 'Hombros en una silla', 'Con pausa de 3 s arriba'] },
+    plancha: { n: 'Plancha lateral con elevación', nota: 'Glúteo medio · por lado', r: [8, 12], paso: 0, grupo: 'Pierna y cadera', esc: ['Rodilla apoyada', 'Pies apoyados', 'Con 2 s arriba'] },
+    hollow: { n: 'Hollow hold', u: 's', r: [20, 40], paso: 0, grupo: 'Abdomen', esc: ['Rodillas dobladas', 'Piernas rectas', 'Hollow rocks'] },
+    rodillas: { n: 'Elevaciones de rodillas colgado', r: [8, 12], paso: 0, grupo: 'Abdomen', esc: ['Rodillas', 'Piernas rectas', 'L-sit en paralelas'] },
+  };
+  // [pareja, ejercicio, series]
+  const SESIONES = {
+    A: [['1a', 'negativas', 3], ['1b', 'bulgara', 3], ['2a', 'fondos', 3], ['2b', 'puente', 3], ['3a', 'remo', 3], ['3b', 'flexiones', 3], ['4', 'hollow', 3]],
+    B: [['1a', 'supinas', 3], ['1b', 'stepdown', 3], ['2a', 'aguante', 3], ['2b', 'plancha', 3], ['3a', 'pike', 3], ['3b', 'remo', 3], ['4', 'rodillas', 3], ['5', 'colgado', 2]],
+  };
+  // Prueba cada 4 semanas: una serie al máximo de cada uno.
+  const PRUEBA = [['dominadas', 'Dominadas', 'Sin balanceo, de brazos rectos a barbilla por encima.'], ['fondos', 'Fondos', 'Hasta que el brazo quede paralelo al suelo.'], ['flexiones', 'Flexiones', 'Pecho casi al suelo, cuerpo recto.']];
+  const PRUEBA_INICIAL = { dia: '2026-10-30', dominadas: 1, fondos: 6, flexiones: 15 }; // lo que dijo Toon
+  const HITOS = [
+    { n: 'Primera dominada', mide: 'dominadas', meta: 1, aprox: 'enero' },
+    { n: '5 dominadas seguidas', mide: 'dominadas', meta: 5, aprox: 'primavera' },
+    { n: '8 dominadas y 10 fondos', mide: 'ambos', meta: 8, aprox: 'verano' },
+    { n: 'Muscle-up', mide: 'muscleup', meta: 1, aprox: 'otoño de 2027' },
+  ];
+
+  // Volver a correr, fase 1: 3 salidas por semana. Cada salida: 5′ andando, bloques y 5′ andando.
+  const CORRER = [
+    { r: 8, c: 60, a: 90 }, { r: 6, c: 120, a: 90 }, { r: 5, c: 180, a: 60 }, { r: 4, c: 300, a: 60 }, { r: 3, c: 480, a: 60 },
+    { r: 2, c: 720, a: 60 }, { r: 1, c: 1200 }, { r: 1, c: 1500 }, { r: 1, c: 1800 },
+  ];
+  const FASES = [
+    { desde: '2026-11-02', n: 'Andar y correr', corto: '→ 30′' },
+    { desde: '2027-01-11', n: 'Base', corto: 'Base' },
+    { desde: '2027-05-03', n: '10K cómodo', corto: '10K' },
+    { desde: '2027-07-12', n: 'Plan de media', corto: 'Media' },
+  ];
+
+  // [dibujo, nombre, segundos]
+  const MOV = {
+    sup: { n: 'Hombros y espalda', l: [['colgado', 'Colgado pasivo', 30], [null, 'Descansa', 15], ['colgado', 'Colgado pasivo', 30], ['dislocaciones', 'Dislocaciones con toalla', 60], ['pecho', 'Pecho en la paralela · izquierda', 45], ['pecho', 'Pecho en la paralela · derecha', 45], ['libro', 'Libro abierto · izquierda', 60], ['libro', 'Libro abierto · derecha', 60], ['gato', 'Gato-camello', 60], ['munecas', 'Muñecas · palmas', 45], ['munecas', 'Muñecas · dorsos', 45]] },
+    cad: { n: 'Cadera y rodilla', l: [['almeja', 'Almeja con pausa · izquierda', 45], ['almeja', 'Almeja con pausa · derecha', 45], ['almeja', 'Almeja con pausa · izquierda', 45], ['almeja', 'Almeja con pausa · derecha', 45], ['lateral', 'Lateral de cadera · izquierda', 45], ['lateral', 'Lateral de cadera · derecha', 45], ['cuadriceps', 'Cuádriceps · izquierda', 45], ['cuadriceps', 'Cuádriceps · derecha', 45], ['gemelo', 'Gemelo en la pared · izquierda', 45], ['gemelo', 'Gemelo en la pared · derecha', 45], ['noventa', '90/90 lento', 90]] },
+    sab: { n: 'Movilidad del sábado', l: [['noventa', '90/90 con cambios', 180], ['flexor', 'Flexor de cadera · izquierda', 45], ['flexor', 'Flexor de cadera · derecha', 45], ['paloma', 'Paloma · izquierda', 90], ['paloma', 'Paloma · derecha', 90], ['sentadilla', 'Sentadilla profunda', 60], ['tobillo', 'Tobillo a la pared · izquierda', 45], ['tobillo', 'Tobillo a la pared · derecha', 45], ['libro', 'Libro abierto · izquierda', 45], ['libro', 'Libro abierto · derecha', 45], ['puente2', 'Puente de glúteo', 45], ['almeja', 'Almeja · izquierda', 45], ['almeja', 'Almeja · derecha', 45], ['colgado', 'Colgado pasivo', 30], [null, 'Descansa', 15], ['colgado', 'Colgado pasivo', 30], ['dislocaciones', 'Dislocaciones con toalla', 45], ['respiracion', 'Respiración, piernas en una silla', 90]] },
+  };
+
+  // ---------- Fechas (texto yyyy-mm-dd, sin zonas horarias) ----------
+  const t = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  const diaMas = (s, n) => new Date(t(s) + n * 86400000).toISOString().slice(0, 10);
+  const entre = (a, b) => Math.round((t(b) - t(a)) / 86400000);
+  const semanaDia = s => (new Date(t(s)).getUTCDay() + 6) % 7; // 0 = lunes
+  const lunes = s => diaMas(s, -semanaDia(s));
+  const corta = s => DIAS[semanaDia(s)].slice(0, 3) + ' ' + Number(s.slice(8)) + ' ' + MESES[Number(s.slice(5, 7)) - 1];
+  const fm = s => { const m = Math.floor(s / 60), x = s % 60; return x ? `${m}′${x}″` : `${m}′`; };
+
+  // ---------- Correr ----------
+  function correrDe(sem) {
+    if (sem < CORRER.length) {
+      const w = CORRER[sem];
+      return { fase: 1, sem, texto: w.r > 1 ? `${w.r} × (${fm(w.c)} corre · ${fm(w.a)} anda)` : `${fm(w.c)} seguidos`, ...w };
+    }
+    // Fase 2 en adelante: carrera continua; la del domingo es más larga y cada 4.ª semana se descarga.
+    const j = sem - CORRER.length, descarga = (j + 1) % 4 === 0;
+    const base = Math.min(45, 30 + 5 * Math.floor(j / 2)), larga = Math.min(60, 35 + 5 * j);
+    const k = descarga ? 0.67 : 1;
+    return { fase: 2, sem, descarga, min: Math.round(base * k / 5) * 5, larga: Math.round(larga * k / 5) * 5,
+      texto: `${Math.round(base * k / 5) * 5}′ fáciles · domingo ${Math.round(larga * k / 5) * 5}′${descarga ? ' · semana suave' : ''}` };
+  }
+  // Tramos del cronómetro: { n, s, k: 'run' | 'walk' }
+  function tramosCorrer(sem, domingo) {
+    const w = correrDe(sem), f = [{ n: 'Anda para calentar', s: 300, k: 'walk' }];
+    if (w.fase === 1) {
+      for (let i = 0; i < w.r; i++) {
+        f.push({ n: 'Corre', s: w.c, k: 'run' });
+        if (w.a && i < w.r - 1) f.push({ n: 'Anda', s: w.a, k: 'walk' });
+      }
+    } else f.push({ n: 'Corre suave', s: (domingo ? w.larga : w.min) * 60, k: 'run' });
+    f.push({ n: 'Anda para soltar', s: 300, k: 'walk' });
+    return f;
+  }
+  const tramosMov = id => MOV[id].l.map(([d, n, s]) => ({ d, n, s, k: d ? 'mov' : 'walk' }));
+  const minutos = tramos => Math.round(tramos.reduce((a, x) => a + x.s, 0) / 60);
+
+  // ---------- Calistenia ----------
+  function sugerir(e, paso, ult, series) {
+    const [lo, hi] = e.r, st = e.u === 's' ? 5 : 1;
+    if (!ult || !ult.length) return { sube: false, obj: Array(series).fill(lo), nuevo: true };
+    const u = Array.from({ length: series }, (_, i) => ult[i] != null ? ult[i] : ult[ult.length - 1]);
+    if (u.every(v => v >= hi) && paso < e.esc.length - 1) return { sube: true, obj: u.map(() => lo) };
+    return { sube: false, obj: u.map(v => Math.min(hi, v + st)) };
+  }
+
+  // ---------- Estado a partir del registro ----------
+  // Tipos del registro: sesion, rodilla, mover, saltar, pausa, quitarPausa, deshacer.
+  function estado(log) {
+    const anulados = new Set(log.filter(e => e.tipo === 'deshacer').map(e => e.ref));
+    const L = log.filter(e => e.tipo !== 'deshacer' && !anulados.has(e.id)).slice().sort((a, b) => (a.cuando < b.cuando ? -1 : a.cuando > b.cuando ? 1 : 0));
+    const E = {
+      paso: {}, ult: {}, hechos: {}, saltados: {}, movidos: [], pausas: PAUSAS.map(p => ({ ...p, fija: true })),
+      correr: { sem: 0, hechas: 0, duros: 0 }, rodilla: [], pruebas: [{ ...PRUEBA_INICIAL, inicial: true }], subidas: [], muscleup: null,
+    };
+    Object.keys(EJ).forEach(id => { E.paso[id] = EJ[id].paso; });
+    const quitadas = new Set();
+    for (const e of L) {
+      if (e.tipo === 'sesion') {
+        const para = e.para || e.dia;
+        E.hechos[para] = e;
+        if (e.plan === 'A' || e.plan === 'B') {
+          // Al subir de escalón, las series de esa sesión ya son del escalón nuevo.
+          (e.sube || []).forEach(id => {
+            if (!EJ[id] || E.paso[id] >= EJ[id].esc.length - 1) return;
+            E.paso[id]++;
+            E.ult[id] = [];
+            E.subidas.push({ dia: e.dia, id, a: EJ[id].esc[E.paso[id]] });
+          });
+          Object.keys(e.series || {}).forEach(id => {
+            const v = (e.series[id] || []).filter(x => x != null);
+            if (v.length && EJ[id]) E.ult[id] = v;
+          });
+        }
+        if (e.plan === 'test') {
+          E.pruebas.push({ dia: e.dia, dominadas: +e.prueba.dominadas || 0, fondos: +e.prueba.fondos || 0, flexiones: +e.prueba.flexiones || 0 });
+          if (e.prueba.muscleup) E.muscleup = e.dia;
+        }
+        if (e.plan === 'run') {
+          const c = E.correr, rod = Number(e.rodilla);
+          E.rodilla.push({ dia: e.dia, v: rod, k: 'run' });
+          if (rod > 3) { c.hechas = 0; c.duros = 0; }
+          else {
+            c.duros = e.sens === 'duro' ? c.duros + 1 : 0;
+            if (c.duros >= 2) { c.hechas = 0; c.duros = 0; }
+            else if (++c.hechas >= 3) { c.sem++; c.hechas = 0; c.duros = 0; }
+          }
+        }
+      } else if (e.tipo === 'rodilla') {
+        E.rodilla.push({ dia: e.dia, v: e.valor === 'peor' ? 'peor' : 'igual', k: 'manana' });
+        if (e.valor === 'peor') E.correr.hechas = Math.max(0, E.correr.hechas - 1);
+      } else if (e.tipo === 'mover') E.movidos.push({ de: e.de, a: e.a });
+      else if (e.tipo === 'saltar') E.saltados[e.dia] = true;
+      else if (e.tipo === 'pausa') E.pausas.push({ id: e.id, desde: e.desde, hasta: e.hasta, motivo: e.motivo || 'Pausa' });
+      else if (e.tipo === 'quitarPausa') quitadas.add(e.ref);
+    }
+    E.pausas = E.pausas.filter(p => !quitadas.has(p.id)).sort((a, b) => (a.desde < b.desde ? -1 : 1));
+    // Cambios de día: intercambian lo que había en los dos días, en orden.
+    E.asignado = {};
+    E.movidos.forEach(m => { const x = tipoDia(E, m.de), y = tipoDia(E, m.a); E.asignado[m.a] = x; E.asignado[m.de] = y; });
+    return E;
+  }
+
+  function pausaDe(E, dia) { return E.pausas.find(p => dia >= p.desde && dia <= p.hasta) || null; }
+  function tipoBase(dia) {
+    if (dia < INICIO) return null;
+    const w = Math.floor(entre(INICIO, dia) / 7), d = semanaDia(dia), b = SEMANA[d];
+    if (b !== 'cal') return b;
+    if (d === 4 && (w + 1) % 4 === 0) return 'test';
+    const orden = w % 2 === 0 ? ['A', 'B', 'A'] : ['B', 'A', 'B'];
+    return orden[[0, 2, 4].indexOf(d)];
+  }
+  function tipoDia(E, dia) { return Object.prototype.hasOwnProperty.call(E.asignado, dia) ? E.asignado[dia] : tipoBase(dia); }
+
+  // Qué toca un día: { dia, tipo, hora, hecho, saltado, pausa, movido }
+  function dia(E, d) {
+    const p = pausaDe(E, d);
+    const tipo = p ? null : tipoDia(E, d);
+    return {
+      dia: d, tipo, hora: HORA[semanaDia(d)], pausa: p ? p.motivo : null, hecho: E.hechos[d] || null,
+      saltado: !!E.saltados[d], movido: Object.prototype.hasOwnProperty.call(E.asignado, d),
+    };
+  }
+  const semana = (E, lun) => Array.from({ length: 7 }, (_, i) => dia(E, diaMas(lun, i)));
+  const esFuerte = tipo => ['A', 'B', 'test', 'run'].includes(tipo);
+
+  // Sesiones de esta semana que pasaron sin hacer y sin saltar, con un hueco propuesto.
+  function pendientes(E, hoy) {
+    const out = [];
+    for (let d = lunes(hoy); d < hoy; d = diaMas(d, 1)) {
+      const x = dia(E, d);
+      if (!esFuerte(x.tipo) || x.hecho || x.saltado) continue;
+      let hueco = null;
+      for (let h = hoy; h <= diaMas(lunes(hoy), 6); h = diaMas(h, 1)) {
+        const y = dia(E, h);
+        if ((y.tipo === 'sab' || y.tipo == null) && !y.pausa && !y.hecho) { hueco = h; break; }
+      }
+      out.push({ ...x, hueco });
+    }
+    return out;
+  }
+
+  function titulo(tipo) {
+    return { A: 'Calistenia A', B: 'Calistenia B', test: 'Prueba', run: 'Correr', sab: 'Movilidad' }[tipo] || 'Descanso';
+  }
+  function clase(tipo) { return { A: 'cal', B: 'cal', test: 'cal', run: 'run', sab: 'mov' }[tipo] || 'off'; }
+  function detalle(E, x) {
+    if (x.pausa) return x.pausa;
+    if (x.tipo === 'A' || x.tipo === 'B') return `${SESIONES[x.tipo].length} ejercicios en parejas · 45–50 min`;
+    if (x.tipo === 'test') return 'Dominadas, fondos y flexiones al máximo · 20 min';
+    if (x.tipo === 'run') return `Semana ${E.correr.sem + 1}${E.correr.sem < CORRER.length ? ' de 9' : ''} · ${correrDe(E.correr.sem).texto}`;
+    if (x.tipo === 'sab') return `${minutos(tramosMov('sab'))} min · cadera, espalda y hombros`;
+    return 'Descanso';
+  }
+
+  // Progreso hacia los hitos del muscle-up con las pruebas: ritmo por semana y fecha estimada.
+  function hitos(E, hoy) {
+    const P = E.pruebas, ult = P[P.length - 1], pri = P[0];
+    const semanas = Math.max(1, entre(pri.dia, ult.dia) / 7);
+    const ritmo = (ult.dominadas - pri.dominadas) / semanas;
+    return HITOS.map(h => {
+      let hecho = false, valor = null;
+      if (h.mide === 'dominadas') { hecho = P.some(p => p.dominadas >= h.meta); valor = ult.dominadas; }
+      if (h.mide === 'ambos') hecho = P.some(p => p.dominadas >= 8 && p.fondos >= 10);
+      if (h.mide === 'muscleup') hecho = !!E.muscleup;
+      let cuando = h.aprox;
+      if (!hecho && h.mide !== 'muscleup' && P.length > 1 && ritmo > 0) {
+        const meta = h.mide === 'ambos' ? 8 : h.meta;
+        const d = diaMas(ult.dia, Math.ceil((meta - ult.dominadas) / ritmo * 7));
+        cuando = '≈ ' + MESES[Number(d.slice(5, 7)) - 1] + ' ' + d.slice(0, 4);
+      }
+      return { ...h, hecho, valor, cuando };
+    });
+  }
+
+  // Resumen de la semana que empieza en lun.
+  function resumen(E, lun) {
+    const dias = semana(E, lun), fin = diaMas(lun, 6);
+    const plan = dias.filter(x => x.tipo && !x.pausa), hechas = dias.filter(x => x.hecho);
+    const reps = l => l.reduce((a, x) => {
+      const h = x.hecho;
+      if (!h || !h.series) return a;
+      return a + Object.keys(h.series).filter(id => EJ[id] && EJ[id].u !== 's').reduce((b, id) => b + h.series[id].reduce((c, v) => c + (v || 0), 0), 0);
+    }, 0);
+    const runs = hechas.filter(x => x.hecho.plan === 'run');
+    return {
+      lun, fin, plan: plan.length, hechas: hechas.length, reps: reps(dias), repsAntes: reps(semana(E, diaMas(lun, -7))),
+      subidas: E.subidas.filter(s => s.dia >= lun && s.dia <= fin),
+      salidas: runs.length, corriendo: runs.reduce((a, x) => a + (x.hecho.corriendo || 0), 0),
+      rodilla: E.rodilla.filter(r => r.dia >= lun && r.dia <= fin),
+      siguiente: semana(E, diaMas(lun, 7)),
+    };
+  }
+
+  function faseDe(d) { let f = FASES[0]; FASES.forEach(x => { if (d >= x.desde) f = x; }); return f; }
+
+  return {
+    INICIO, CARRERA, SEMANA, HORA, DIAS, MESES, EJ, SESIONES, PRUEBA, CORRER, FASES, MOV,
+    diaMas, entre, semanaDia, lunes, corta, fm, correrDe, tramosCorrer, tramosMov, minutos, sugerir,
+    estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte,
+  };
+})();
+// </plan>
+
+// ---------- Hoja ----------
+
+let LIBRO_ = null;
+
+function libro_() {
+  if (!LIBRO_) {
+    const id = PropertiesService.getScriptProperties().getProperty('HOJA');
+    if (!id) throw new Error('Falta ejecutar configurar()');
+    LIBRO_ = SpreadsheetApp.openById(id);
+  }
+  return LIBRO_;
+}
+
+function hoja_(nombre) {
+  const h = libro_().getSheetByName(nombre);
+  if (!h) throw new Error('Falta la pestaña ' + nombre + ': ejecuta configurar()');
+  return h;
+}
+
+function cabecera_(h) {
+  return h.getRange(1, 1, 1, h.getLastColumn()).getValues()[0].map(String);
+}
+
+// Filas como objetos { columna: valor, _fila }. Se saltan las que tienen vacía la primera columna.
+function leer_(nombre) {
+  const v = hoja_(nombre).getDataRange().getValues();
+  const cab = v[0].map(String);
+  const out = [];
+  for (let i = 1; i < v.length; i++) {
+    if (v[i][0] === '' || v[i][0] == null) continue;
+    const o = { _fila: i + 1 };
+    cab.forEach((c, j) => { o[c] = v[i][j]; });
+    out.push(o);
+  }
+  return out;
+}
+
+function anadir_(nombre, obj) {
+  const h = hoja_(nombre);
+  h.appendRow(cabecera_(h).map(c => celda_(obj[c])));
+}
+
+// ---------- Utilidades ----------
+
+function claveValida_(k) {
+  return !!k && k === PropertiesService.getScriptProperties().getProperty('CLAVE');
+}
+
+function comprobar_(k) {
+  if (!claveValida_(k)) throw new Error('Clave incorrecta');
+}
+
+function texto_(s) {
+  return ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.TEXT);
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Texto que entra en la hoja: sin espacios sobrantes y sin convertirse en fórmula ("=algo").
+function limpiar_(s) {
+  s = String(s == null ? '' : s).trim();
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+function celda_(v) {
+  if (v == null) return '';
+  return typeof v === 'string' ? limpiar_(v) : v;
+}
+
+function diaDe_(fecha) {
+  return Utilities.formatDate(fecha, TZ, 'yyyy-MM-dd');
+}
