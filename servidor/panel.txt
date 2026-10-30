@@ -331,7 +331,8 @@
   .listado b { color: var(--text); font-weight: 600; }
 
   .ajuste { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-  .ajuste div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ajuste > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ajuste .fila { flex-direction: row; }
   .ajuste small { color: var(--muted); font-size: 13px; line-height: 1.4; }
   .interruptor { width: 52px; height: 32px; border-radius: 16px; border: 0; background: var(--track); position: relative; flex: 0 0 auto; }
   .interruptor::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: var(--text); transition: transform .2s; }
@@ -968,9 +969,10 @@ const PLAN = (() => {
     const E = {
       paso: {}, ult: {}, hechos: {}, saltados: {}, movidos: [], pausas: PAUSAS.map(p => ({ ...p, fija: true })),
       correr: { sem: 0, hechas: 0, duros: 0 }, rodilla: [], pruebas: [{ ...PRUEBA_INICIAL, inicial: true }], subidas: [], muscleup: null,
+      garmin: [], garminDia: {},
     };
     Object.keys(EJ).forEach(id => { E.paso[id] = EJ[id].paso; });
-    const quitadas = new Set();
+    const quitadas = new Set(), ignorados = new Set();
     for (const e of L) {
       if (e.tipo === 'sesion') {
         const para = e.para || e.dia;
@@ -1009,7 +1011,16 @@ const PLAN = (() => {
       else if (e.tipo === 'saltar') E.saltados[e.dia] = true;
       else if (e.tipo === 'pausa') E.pausas.push({ id: e.id, desde: e.desde, hasta: e.hasta, motivo: e.motivo || 'Pausa' });
       else if (e.tipo === 'quitarPausa') quitadas.add(e.ref);
+      else if (e.tipo === 'garmin' && e.actividad) { E.garmin.push(e); (E.garminDia[e.dia] = E.garminDia[e.dia] || []).push(e.actividad); }
+      else if (e.tipo === 'ignorar') ignorados.add(String(e.ref));
     }
+    // Una actividad del reloj ya está apuntada si una sesión la lleva, si ese día ya hay una sesión de su clase o si se ignoró.
+    const conReloj = new Set(L.filter(e => e.tipo === 'sesion' && e.garmin).map(e => String(e.garmin)));
+    const claseDe = { run: 'run', fuerza: 'cal', flex: 'mov' };
+    const diasClase = new Set(L.filter(e => e.tipo === 'sesion').map(e => e.dia + ':' + clase(e.plan)));
+    E.garmin.forEach(g => {
+      g.enlazado = conReloj.has(String(g.actividad.id)) || ignorados.has(g.id) || diasClase.has(g.dia + ':' + claseDe[g.actividad.tipo]) || !claseDe[g.actividad.tipo];
+    });
     E.pausas = E.pausas.filter(p => !quitadas.has(p.id)).sort((a, b) => (a.desde < b.desde ? -1 : 1));
     // Cambios de día: intercambian lo que había en los dos días, en orden.
     E.asignado = {};
@@ -1110,12 +1121,39 @@ const PLAN = (() => {
     };
   }
 
+  // Qué día del plan cubre una sesión de tipo `tipo` hecha el día d: ese mismo si tocaba eso;
+  // si no, el primero de esa semana que tocara y siga pendiente; si no hay, el propio día.
+  function paraTipo(E, d, tipo) {
+    const x = dia(E, d);
+    if (x.tipo === tipo && !x.hecho) return d;
+    for (let i = 0; i < 7; i++) {
+      const y = dia(E, diaMas(lunes(d), i));
+      if (y.tipo === tipo && !y.hecho && !y.saltado && !y.pausa) return y.dia;
+    }
+    return d;
+  }
+  const paraCarrera = (E, d) => paraTipo(E, d, 'run');
+  // Nombre del entreno del reloj para cada sesión (los archivos de garmin/entrenos).
+  function entrenoReloj(E, tipo) {
+    if (tipo === 'A' || tipo === 'B') return 'Calistenia ' + tipo;
+    if (tipo === 'test') return 'Prueba máximos';
+    if (tipo === 'sab') return 'Movilidad sábado';
+    if (tipo === 'run') return E.correr.sem < CORRER.length ? 'Correr S' + (E.correr.sem + 1) : null;
+    return null;
+  }
+  // Lo que se pone en Correr/Caminar del reloj esa semana (null si es carrera seguida).
+  function reloj(sem) {
+    const w = correrDe(sem);
+    return w.fase === 1 && w.a ? { correr: fm(w.c), caminar: fm(w.a) } : null;
+  }
+  const ritmo = s => s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '/km' : '';
+
   function faseDe(d) { let f = FASES[0]; FASES.forEach(x => { if (d >= x.desde) f = x; }); return f; }
 
   return {
     INICIO, INICIO_CAL, CARRERA, SEMANA, HORA, DIAS, MESES, EJ, SESIONES, PRUEBA, CORRER, FASES, MOV,
     diaMas, entre, semanaDia, lunes, corta, fm, correrDe, tramosCorrer, tramosMov, minutos, sugerir,
-    estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte,
+    estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte, paraTipo, paraCarrera, entrenoReloj, reloj, ritmo,
   };
 })();
 // </plan>
@@ -1151,6 +1189,7 @@ const PLAN = (() => {
   let LOG = DEMO ? DEMO.log : LS.get('log', []);
   let COLA = DEMO ? [] : LS.get('cola', []);
   let CALENDARIO = LS.get('calendario', true);
+  let GARMIN = DEMO ? (DEMO.garmin || null) : LS.get('garmin', null);
   let E = null;
   let tab = LS.get('tab', 'today');
   if (!['today', 'plan', 'progress'].includes(tab)) tab = 'today';
@@ -1215,8 +1254,10 @@ const PLAN = (() => {
   function aplicar(d) {
     LOG = d.log || [];
     CALENDARIO = d.calendario !== false;
+    GARMIN = d.garmin || null;
     LS.set('log', LOG);
     LS.set('calendario', CALENDARIO);
+    LS.set('garmin', GARMIN);
   }
   async function cargar() {
     if (!conectado()) return;
@@ -1330,11 +1371,20 @@ const PLAN = (() => {
   /* ---------- Textos ---------- */
   function resumenDe(h) {
     if (!h) return '';
-    if (h.plan === 'run') return `${h.minutos || ''} min · rodilla ${h.rodilla} sobre 10`;
+    if (h.plan === 'run') { const g = h.garmin && (E.garmin.find(x => x.actividad.id === String(h.garmin)) || {}).actividad; return `${g ? lineaReloj(g) : (h.minutos || '') + ' min'} · rodilla ${h.rodilla} sobre 10`; }
     if (h.plan === 'test') return `Dominadas ${h.prueba.dominadas} · fondos ${h.prueba.fondos} · flexiones ${h.prueba.flexiones}`;
     if (h.plan === 'sab') return `${h.minutos || ''} min de movilidad`;
     const rep = Object.keys(h.series || {}).filter(id => P.EJ[id] && P.EJ[id].u !== 's').reduce((a, id) => a + h.series[id].reduce((b, v) => b + (v || 0), 0), 0);
-    return `${rep} repes${h.sube && h.sube.length ? ' · ' + h.sube.length + ' escalón' + (h.sube.length > 1 ? 'es' : '') + ' nuevo' + (h.sube.length > 1 ? 's' : '') : ''}`;
+    return `${rep} repes${h.sube && h.sube.length ? ' · ' + h.sube.length + ' escalón' + (h.sube.length > 1 ? 'es' : '') + ' nuevo' + (h.sube.length > 1 ? 's' : '') : ''}${h.reloj ? ' · con el reloj' : ''}`;
+  }
+  // Una actividad del reloj en una línea: «31 min · 3,4 km · 9:05/km · 142 ppm».
+  function lineaReloj(a) {
+    const t = [a.min + ' min'];
+    if (a.km) t.push(String(a.km).replace('.', ',') + ' km');
+    if (a.ritmo) t.push(P.ritmo(a.ritmo));
+    if (a.reps) t.push(a.reps + ' repes');
+    if (a.fc) t.push(a.fc + ' ppm');
+    return t.join(' · ');
   }
   const etiDia = (d, hoy) => d === hoy ? 'Hoy' : d === P.diaMas(hoy, 1) ? 'Mañana' : d === P.diaMas(hoy, -1) ? 'Ayer' : nombreDia(d).charAt(0).toUpperCase() + nombreDia(d).slice(1);
   // Para cabeceras: «Hoy · mié 2 dic» o solo «vie 27 nov».
@@ -1345,7 +1395,20 @@ const PLAN = (() => {
     const hoy = hoyDe(), x = P.dia(E, hoy), k = P.clase(x.tipo);
     let h = '';
 
-    P.pendientes(E, hoy).forEach(p => {
+    // Lo que trajo el reloj y aún no está apuntado (últimos 7 días).
+    E.garmin.filter(g => !g.enlazado && g.dia >= P.diaMas(hoy, -7) && g.dia >= P.INICIO).forEach(g => {
+      const a = g.actividad;
+      if (a.tipo === 'run') h += `<section class="tarjeta aviso"><p><b>Carrera del reloj · ${etiDia(g.dia, hoy).toLowerCase()} ${a.hora}</b><br>${esc(lineaReloj(a))}</p><div class="fila"><button class="btn peque" data-carrera="${g.id}">Apuntar rodilla y sensación</button></div></section>`;
+      else {
+        const plan = (P.dia(E, g.dia).tipo === 'B' || P.dia(E, g.dia).tipo === 'A') ? P.dia(E, g.dia).tipo : 'A';
+        h += `<section class="tarjeta aviso"><p><b>${a.tipo === 'flex' ? 'Movilidad' : 'Fuerza'} en el reloj · ${etiDia(g.dia, hoy).toLowerCase()} ${a.hora}</b><br>${esc(lineaReloj(a))}${a.tipo === 'fuerza' ? '. No se hizo con un entreno de Tangerine, así que no sé qué series eran.' : ''}</p>
+          <div class="fila"><button class="btn peque" data-contar="${g.id}" data-plan="${a.tipo === 'flex' ? 'sab' : plan}">Contar como ${a.tipo === 'flex' ? 'movilidad' : P.titulo(plan).toLowerCase()}</button><button class="btn sec peque" data-ignorar="${g.id}">No contar</button></div></section>`;
+      }
+    });
+
+    // Si el reloj ya trajo una actividad de esa clase después del día pendiente, la tarjeta del reloj lo resuelve.
+    const porReloj = p => E.garmin.some(g => !g.enlazado && g.dia >= p.dia && g.dia <= hoy && ({ run: 'run', fuerza: 'cal', flex: 'mov' })[g.actividad.tipo] === P.clase(p.tipo));
+    P.pendientes(E, hoy).filter(p => !porReloj(p)).forEach(p => {
       const run = p.tipo === 'run';
       h += `<section class="tarjeta aviso"><p><b>El ${nombreDia(p.dia)} no hiciste ${P.titulo(p.tipo).toLowerCase()}.</b> ${run ? 'No pasa nada: la semana de correr solo se alarga.' : p.hueco ? `Puedes pasarla al ${nombreDia(p.hueco)}${p.hueco === hoy ? ' (hoy)' : ''} en lugar de la movilidad.` : 'Esta semana ya no queda hueco: sáltala y sigue normal.'}</p>
         <div class="fila">${p.hueco ? `<button class="btn peque" data-mover="${p.dia}" data-a="${p.hueco}">Pasar al ${nombreDia(p.hueco)}</button>` : ''}<button class="btn sec peque" data-saltar="${p.dia}">Saltar</button></div></section>`;
@@ -1357,7 +1420,7 @@ const PLAN = (() => {
       const sig = siguiente(hoy);
       h += `<section class="ahora quieto"><span class="eti">Hoy · hecho</span><h2>${P.titulo(x.tipo)} ${ico.checkG}</h2><p>${esc(resumenDe(x.hecho))}</p>${sig ? `<p>${etiDia(sig.dia, hoy)} ${sig.hora} · ${P.titulo(sig.tipo)}</p>` : ''}</section>`;
     } else if (x.saltado) h += `<section class="ahora quieto"><span class="eti">Hoy</span><h2>Saltado</h2><p>${P.titulo(x.tipo)} no cuenta esta vez.</p><button class="btn sec peque" style="align-self:flex-start;margin-top:8px" data-volver="${hoy}">Deshacer</button></section>`;
-    else h += `<section class="ahora k-${k}"><span class="eti">Hoy · ${x.hora}</span><h2>${P.titulo(x.tipo)}</h2><p>${esc(P.detalle(E, x))}</p><button class="btn osc" data-abrir="${hoy}">Empezar</button></section>`;
+    else h += `<section class="ahora k-${k}"><span class="eti">Hoy · ${x.hora}</span><h2>${P.titulo(x.tipo)}</h2><p>${esc(P.detalle(E, x))}</p>${GARMIN && GARMIN.conectado && P.entrenoReloj(E, x.tipo) ? `<p>En el reloj: entreno «${esc(P.entrenoReloj(E, x.tipo))}»</p>` : ''}<button class="btn osc" data-abrir="${hoy}">Empezar</button></section>`;
 
     const ayer = P.dia(E, P.diaMas(hoy, -1));
     if (ayer.hecho && ayer.hecho.plan === 'run') {
@@ -1488,6 +1551,7 @@ const PLAN = (() => {
         <div class="mes">${mes}</div>
         <div class="leyenda"><span><i></i>Calistenia</span><span><i class="k-run"></i>Correr</span><span><i class="k-mov"></i>Movilidad</span></div></section>
       ${tarjetaRodilla()}
+      ${tarjetaReloj(hoy)}
       <section class="tarjeta"><span class="eti">Camino al muscle-up</span>
         <ol class="camino"><li class="ok"><i>${ico.check}</i><b>Negativas</b><em>desde el ${Number(P.INICIO.slice(8))}/${Number(P.INICIO.slice(5, 7))}</em></li>${hit.map((x, i) => `<li class="${x.hecho ? 'ok' : i === iAct ? 'act' : ''}"><i>${x.hecho ? ico.check : ''}</i><b>${x.n}</b><em>${x.hecho ? 'hecho' : esc(x.cuando)}</em></li>`).join('')}</ol>
         <table class="tabla"><thead><tr><th>Prueba</th><th>Dominadas</th><th>Fondos</th><th>Flexiones</th></tr></thead><tbody>${pr.slice(-5).map(p => `<tr><td>${p.inicial ? 'Punto de partida' : P.corta(p.dia)}</td><td>${p.dominadas}</td><td>${p.fondos}</td><td>${p.flexiones}</td></tr>`).join('')}</tbody></table>
@@ -1523,6 +1587,20 @@ const PLAN = (() => {
       <p class="g-dato">${P.corta(sel.dia)}: <b>${sel.v} sobre 10</b>${sel.v > 3 ? ' · por encima del límite' : ''}</p>
       ${peor.length ? '<p class="peq">▲ Mañanas en las que la rodilla estaba peor.</p>' : ''}
       <details class="ver-tabla"><summary>Ver como tabla</summary><table class="tabla"><thead><tr><th>Día</th><th>Rodilla</th></tr></thead><tbody>${E.rodilla.slice().reverse().map(r => `<tr><td>${P.corta(r.dia)}${r.k === 'manana' ? ' (mañana)' : ''}</td><td>${r.k === 'run' ? r.v + '/10' : r.v}</td></tr>`).join('')}</tbody></table></details></section>`;
+  }
+
+  // Lo que ha registrado el reloj: la semana en minutos y las últimas actividades.
+  function tarjetaReloj(hoy) {
+    if (!E.garmin.length) return GARMIN && GARMIN.conectado ? '<section class="tarjeta"><span class="eti">Del reloj</span><p class="sub">Aún no ha llegado ninguna actividad de Garmin.</p></section>' : '';
+    const lun = P.lunes(hoy), sem = E.garmin.filter(g => g.dia >= lun);
+    const suma = t => sem.filter(g => g.actividad.tipo === t).reduce((a, g) => a + g.actividad.min, 0);
+    const km = sem.filter(g => g.actividad.tipo === 'run').reduce((a, g) => a + (g.actividad.km || 0), 0);
+    const ult = E.garmin.slice().sort((a, b) => (a.dia + a.actividad.hora < b.dia + b.actividad.hora ? 1 : -1)).slice(0, 8);
+    const nombre = a => a.entreno || a.nombre || ({ run: 'Carrera', fuerza: 'Fuerza', flex: 'Movilidad' })[a.tipo] || 'Actividad';
+    return `<section class="tarjeta"><span class="eti">Del reloj · esta semana</span>
+      <div class="cifras"><div><b>${String(Math.round(km * 10) / 10).replace('.', ',')}</b><small>km corriendo</small></div><div><b>${suma('run')}′</b><small>corriendo</small></div><div><b>${suma('fuerza')}′</b><small>fuerza</small></div></div>
+      <table class="tabla"><thead><tr><th>Últimas</th><th>Min</th><th>Km / repes</th><th>Pulso</th></tr></thead><tbody>${ult.map(g => { const a = g.actividad; return `<tr><td>${P.corta(g.dia)} · ${esc(nombre(a))}</td><td>${a.min}</td><td>${a.tipo === 'run' ? String(a.km).replace('.', ',') + (a.ritmo ? ' · ' + P.ritmo(a.ritmo) : '') : a.reps || '—'}</td><td>${a.fc || '—'}</td></tr>`; }).join('')}</tbody></table>
+      ${GARMIN && GARMIN.cuando ? `<p class="peq">Garmin mirado ${new Date(GARMIN.cuando).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}${GARMIN.ok === false ? ' · ' + esc(GARMIN.error) : ''}</p>` : ''}</section>`;
   }
 
   function como(id, e, paso) {
@@ -1622,6 +1700,14 @@ const PLAN = (() => {
       ses = { k: 'run', dia: d, sem: E.correr.sem, sens: null, rod: null, ...nuevoTimer(tr) };
     } else ses = { k: 'mov', dia: d, lista: 'sab', ...nuevoTimer(P.tramosMov('sab')) };
     pintarHoja();
+    abrirHoja();
+  }
+  // Una carrera que trajo el reloj: solo falta cómo ha ido y la rodilla.
+  function abrirCarrera(id) {
+    const g = E.garmin.find(x => x.id === id);
+    if (!g) return;
+    ses = { k: 'run', dia: g.dia, sem: E.correr.sem, sens: null, rod: null, garmin: g, fin: true, ...nuevoTimer(P.tramosCorrer(E.correr.sem, P.semanaDia(g.dia) === 6)) };
+    vFinRun();
     abrirHoja();
   }
   function abrirMov(id) {
@@ -1815,11 +1901,14 @@ const PLAN = (() => {
     return { t: `Bien. Te ${q === 1 ? 'queda 1 salida' : `quedan ${q} salidas`} de la semana ${n}. Mañana te pregunto por la rodilla.` };
   }
   function vFinRun() {
-    const corr = Math.round(hecho('run') / 60), tot = Math.round(hecho() / 60);
+    const ga = ses.garmin && ses.garmin.actividad;
+    const corr = ga ? (P.correrDe(ses.sem).fase === 1 ? Math.min(ga.min, Math.round(ses.fases.filter(f => f.k === 'run').reduce((a, f) => a + f.s, 0) / 60)) : ga.min) : Math.round(hecho('run') / 60);
+    const tot = ga ? ga.min : Math.round(hecho() / 60);
     const m = mensajeRun(), listo = !!m;
     hoja.innerHTML = `${cabecera(etiSes(), 'Hecho', `Semana ${ses.sem + 1} · salida ${E.correr.hechas + 1} de 3`)}
       <div class="sh-main fin">
         <div class="grande">${tot} <small>min · ${corr} corriendo</small></div>
+        ${ga ? `<p class="sub">Del reloj: ${esc(lineaReloj(ga))}</p>` : ''}
         <span class="eti">¿Cómo ha ido?</span>
         <div class="elige">${[['facil', 'Fácil'], ['bien', 'Bien'], ['duro', 'Duro']].map(([v, t]) => `<button class="${ses.sens === v ? 'on' : ''}" data-sens="${v}">${t}</button>`).join('')}</div>
         <span class="eti">Rodilla derecha mientras corrías</span>
@@ -1852,7 +1941,11 @@ const PLAN = (() => {
       registrar('sesion', { dia: hoy, para: ses.dia, plan: 'test', prueba: Object.assign({}, ses.v, ses.mu ? { muscleup: true } : {}) }, 'Prueba guardada');
     } else if (ses.k === 'run') {
       if (!mensajeRun()) return;
-      registrar('sesion', { dia: hoy, para: ses.dia, plan: 'run', sem: ses.sem, sens: ses.sens, rodilla: ses.rod, corriendo: Math.round(hecho('run') / 60), minutos: Math.round(hecho() / 60) }, 'Salida guardada');
+      const ga = ses.garmin && ses.garmin.actividad;
+      const deHoy = !ga && E.garmin.find(g => g.dia === hoy && g.actividad.tipo === 'run' && !g.enlazado);
+      registrar('sesion', ga
+        ? { dia: ses.garmin.dia, para: P.paraCarrera(E, ses.garmin.dia), plan: 'run', sem: ses.sem, sens: ses.sens, rodilla: ses.rod, corriendo: ga.min, minutos: ga.min, garmin: ga.id }
+        : { dia: hoy, para: ses.dia, plan: 'run', sem: ses.sem, sens: ses.sens, rodilla: ses.rod, corriendo: Math.round(hecho('run') / 60), minutos: Math.round(hecho() / 60), garmin: deHoy ? deHoy.actividad.id : undefined }, 'Salida guardada');
     } else if (ses.k === 'mov' && ses.dia) {
       registrar('sesion', { dia: hoy, para: ses.dia, plan: 'sab', minutos: Math.max(1, Math.round(hecho() / 60)) }, 'Movilidad guardada');
     }
@@ -1863,10 +1956,13 @@ const PLAN = (() => {
   function abrirAjustes() {
     ses = { k: 'ajustes' };
     const exec = API ? API + '?k=' + encodeURIComponent(K) : '';
-    const ultimo = LOG.concat(COLA).filter(e => e.tipo !== 'deshacer').sort((a, b) => (a.cuando < b.cuando ? 1 : -1))[0];
+    const ultimo = LOG.concat(COLA).filter(e => e.tipo !== 'deshacer' && e.tipo !== 'garmin').sort((a, b) => (a.cuando < b.cuando ? 1 : -1))[0];
     hoja.innerHTML = `${cabecera('Tangerine', 'Ajustes', '')}
       <div class="sh-main">
         <div class="ajuste"><div><b>Entrenos en Google Calendar</b><small>Los próximos 14 días, en color mandarina y con aviso 10 min antes. Se actualizan solos.</small></div><button class="interruptor" role="switch" aria-checked="${CALENDARIO}" data-calendario aria-label="Entrenos en Google Calendar"></button></div>
+        <div class="ajuste"><div><b>Garmin</b><small>${GARMIN && GARMIN.conectado ? `Conectado${GARMIN.ok === false ? ' · ' + esc(GARMIN.error) : GARMIN.ultima ? ' · última actividad: ' + P.corta(GARMIN.ultima) : ''}. Mira tus actividades cada 15 minutos.` : 'Tus carreras y sesiones del fénix llegan solas. Saca la clave personal en connect.garmin.com → Ajustes → Personal API Key y pégala aquí. Se guarda solo en tu servidor de Google.'}</small>
+          ${GARMIN && GARMIN.conectado ? '<div class="fila" style="margin-top:8px"><button class="btn sec peque" data-garmin-buscar>Buscar ahora</button><button class="btn sec peque" data-garmin-quitar>Desconectar</button></div>' : '<input class="enlace" id="claveGarmin" placeholder="Clave personal de Garmin" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:8px"><button class="btn peque" style="margin-top:8px" data-garmin-conectar>Conectar</button>'}</div></div>
+        <div class="ajuste"><div><b>Entrenos en el reloj</b><small>Calistenia A y B, la prueba, correr S1–S9 y las movilidades, listos para el fénix. Se copian una vez por USB a la carpeta GARMIN/NewFiles (lo explica INSTRUCCIONES.md). En el reloj: Entrenamiento → Entrenamientos.</small></div></div>
         <div class="ajuste"><div><b>Por enviar</b><small>${COLA.length ? COLA.length + ' cambios guardados en el móvil. Se envían solos cuando hay conexión.' : 'Todo está guardado en tu hoja.'}</small></div>${COLA.length && conectado() ? '<button class="btn sec peque" data-enviar>Enviar</button>' : ''}</div>
         ${ultimo ? `<div class="ajuste"><div><b>Deshacer lo último</b><small>${esc(({ sesion: 'Sesión', rodilla: 'Rodilla', mover: 'Cambio de día', saltar: 'Día saltado', pausa: 'Salida o viaje', quitarPausa: 'Quitar salida' })[ultimo.tipo] || ultimo.tipo)} · ${P.corta(ultimo.dia || ultimo.de || ultimo.desde || hoyDe())}</small></div><button class="btn sec peque" data-borrar="${ultimo.id}">Deshacer</button></div>` : ''}
         <div class="ajuste"><div><b>Widget del iPhone</b><small>En la app Scriptable, crea un script nuevo y pega el código que sale en esta dirección. Luego añade un widget de Scriptable a la pantalla de inicio.</small>${exec ? `<input class="enlace" readonly value="${esc(exec + '&accion=scriptable')}" data-copiar>` : '<small>Abre Tangerine desde tu enlace para ver la dirección.</small>'}</div></div>
@@ -1878,6 +1974,32 @@ const PLAN = (() => {
       try { navigator.clipboard.writeText(i.value).then(() => avisar('Copiado'), () => {}); } catch (e) {}
     }));
     abrirHoja();
+  }
+  async function garminAjuste(b, clave) {
+    if (DEMO) return avisar('En la demo no se conecta nada');
+    if (!conectado()) return avisar('Necesita conexión');
+    if (clave === '' && !(GARMIN && GARMIN.conectado)) return avisar('Pega antes la clave');
+    b.disabled = true;
+    try {
+      const r = await run('accion', 'ajuste', { garmin: clave });
+      aplicar(r.datos);
+      recalcular();
+      pintar();
+      avisar(r.msg);
+      abrirAjustes();
+    } catch (e) { avisar('Garmin: ' + e.message); b.disabled = false; }
+  }
+  async function garminBuscar(b) {
+    if (DEMO || !conectado()) return avisar('Necesita conexión');
+    b.disabled = true;
+    try {
+      const r = await run('accion', 'garmin', {});
+      aplicar(r.datos);
+      recalcular();
+      pintar();
+      avisar(r.msg);
+    } catch (e) { avisar('Garmin: ' + e.message); }
+    b.disabled = false;
   }
   async function cambiarCalendario(b) {
     const v = b.getAttribute('aria-checked') !== 'true';
@@ -1931,6 +2053,12 @@ const PLAN = (() => {
     else if (ds.sem) { semOff = +ds.sem; pintar(); }
     else if (ds.mes) { mesOff += +ds.mes; pintar(); }
     else if (ds.calendario != null) cambiarCalendario(b);
+    else if (ds.carrera) { cerrar(); abrirCarrera(ds.carrera); }
+    else if (ds.contar) { const g = E.garmin.find(x => x.id === ds.contar); registrar('sesion', { dia: g.dia, para: P.paraTipo(E, g.dia, ds.plan), plan: ds.plan, series: {}, garmin: g.actividad.id, reloj: true, minutos: g.actividad.min }, 'Contada'); }
+    else if (ds.ignorar) registrar('ignorar', { ref: ds.ignorar, dia: hoyDe() }, 'Vale, no cuenta');
+    else if (ds.garminConectar != null) garminAjuste(b, $('claveGarmin').value.trim());
+    else if (ds.garminQuitar != null) garminAjuste(b, '');
+    else if (ds.garminBuscar != null) garminBuscar(b);
     else if (ds.enviar != null) { enviar(); cerrar(); }
   });
   document.addEventListener('toggle', ev => {

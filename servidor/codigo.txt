@@ -19,6 +19,17 @@ const DIAS_CALENDARIO = 14;
 const COLOR_CAL = '6';
 const AVISO_MIN = 10;
 const WEB = 'https://hidegalaxy.github.io/tangerine/';
+// API personal de Garmin (solo lectura). La clave vive en las propiedades del script, nunca en la web.
+const GARMIN_URL = 'https://personal.connectapi.garmin.com';
+// Ejercicio de Garmin «categoría:nombre» → ejercicio de Tangerine. Mismos números que garmin/crear_entrenos.py.
+const EJERCICIOS_GARMIN_ = {
+  '21:38': 'negativas', '21:39': 'supinas', '23:35': 'remo', '35:51': 'colgado', '30:2': 'fondos', '30:0': 'aguante',
+  '22:77': 'flexiones', '22:84': 'pike', '17:32': 'bulgara', '28:45': 'stepdown', '10:30': 'puente', '19:24': 'plancha',
+  '6:24': 'hollow', '16:0': 'rodillas',
+};
+const PRUEBA_GARMIN_ = { '21:38': 'dominadas', '30:2': 'fondos', '22:77': 'flexiones' };
+// Nombre del entreno del reloj → sesión del plan.
+const ENTRENOS_GARMIN_ = { 'Calistenia A': 'A', 'Calistenia B': 'B', 'Prueba máximos': 'test', 'Movilidad sábado': 'sab' };
 
 function configurar() {
   const props = PropertiesService.getScriptProperties();
@@ -54,6 +65,9 @@ function configurar() {
   // Cada madrugada pone en el calendario los días que entran en las dos semanas siguientes.
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'diario').forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('diario').timeBased().everyDays(1).atHour(4).inTimezone(TZ).create();
+  // Cada 15 minutos mira si el reloj ha subido algo nuevo a Garmin (si hay clave).
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'cadaRato').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('cadaRato').timeBased().everyMinutes(15).create();
   sincronizar_();
   Logger.log('Calendario: ' + cal.getName());
   Logger.log('Hoja: ' + ss.getUrl());
@@ -62,6 +76,10 @@ function configurar() {
 
 function diario() {
   sincronizar_();
+}
+
+function cadaRato() {
+  garmin_(3);
 }
 
 // ---------- Web ----------
@@ -130,7 +148,7 @@ function accion(k, que, d) {
   return { msg: (r && r.msg) || '', ids: (r && r.ids) || [], datos: datos_() };
 }
 
-const TIPOS_REGISTRO_ = ['sesion', 'rodilla', 'mover', 'saltar', 'pausa', 'quitarPausa', 'deshacer'];
+const TIPOS_REGISTRO_ = ['sesion', 'rodilla', 'mover', 'saltar', 'pausa', 'quitarPausa', 'deshacer', 'ignorar'];
 
 const ACCIONES_ = {
   // Añade entradas del móvil. Las que ya estaban (mismo id) se ignoran: reenviar no duplica.
@@ -161,12 +179,43 @@ const ACCIONES_ = {
       props.setProperty('CALENDARIO', d.calendario ? 'si' : 'no');
       sincronizar_();
     }
+    if (d.garmin != null) {
+      CacheService.getScriptCache().remove('GARMIN_TOKEN');
+      const clave = String(d.garmin).trim();
+      if (!clave) {
+        props.deleteProperty('GARMIN_KEY');
+        props.deleteProperty('GARMIN_ESTADO');
+        return { msg: 'Garmin desconectado' };
+      }
+      props.setProperty('GARMIN_KEY', clave);
+      const r = garmin_(90);
+      if (!r.ok) {
+        props.deleteProperty('GARMIN_KEY');
+        throw new Error(r.error);
+      }
+      return { msg: 'Garmin conectado: ' + r.nuevas + ' actividades' };
+    }
     return { msg: 'Hecho' };
+  },
+  garmin: () => {
+    const r = garmin_(14);
+    if (!r.ok) throw new Error(r.error || 'Garmin no está conectado');
+    return { msg: r.nuevas ? r.nuevas + ' actividades nuevas' : 'Nada nuevo en Garmin' };
   },
 };
 
 function datos_() {
+  const props = PropertiesService.getScriptProperties();
+  // Al abrir la app, si hace rato que no se miró Garmin, se mira ya.
+  if (props.getProperty('GARMIN_KEY')) {
+    let e = {};
+    try { e = JSON.parse(props.getProperty('GARMIN_ESTADO') || '{}'); } catch (err) {}
+    if (!e.cuando || Date.now() - new Date(e.cuando).getTime() > 10 * 60000) garmin_(3);
+  }
+  let estado = {};
+  try { estado = JSON.parse(props.getProperty('GARMIN_ESTADO') || '{}'); } catch (err) {}
   return {
+    garmin: Object.assign({ conectado: !!props.getProperty('GARMIN_KEY') }, estado),
     log: registro_(),
     hoy: diaDe_(new Date()),
     calendario: PropertiesService.getScriptProperties().getProperty('CALENDARIO') !== 'no',
@@ -181,6 +230,191 @@ function registro_() {
     return Object.assign(resto, { id: String(r.id), cuando, tipo: String(r.tipo) });
   });
 }
+
+// ---------- Garmin ----------
+
+// Trae las actividades de los últimos `dias` días que aún no están en el registro.
+// Las de fuerza hechas con un entreno de Tangerine se apuntan solas como sesión, serie por serie.
+function garmin_(dias) {
+  const props = PropertiesService.getScriptProperties();
+  const clave = props.getProperty('GARMIN_KEY');
+  if (!clave) return { ok: false, error: 'Garmin no está conectado' };
+  const guardarEstado = o => props.setProperty('GARMIN_ESTADO', JSON.stringify(Object.assign({ cuando: new Date().toISOString() }, o)));
+  try {
+    const token = tokenGarmin_(clave);
+    const hoy = diaDe_(new Date());
+    const r = pedirGarmin_(token, '/activitylist-service/activities/search/activities?start=0&limit=50&startDate=' + PLAN.diaMas(hoy, -dias) + '&endDate=' + hoy);
+    const j = JSON.parse(r.getContentText());
+    const lista = Array.isArray(j) ? j : (j.activityList || j.activities || []);
+    const ya = new Set(leer_('Registro').map(x => String(x.id)));
+    let nuevas = 0;
+    // De la más antigua a la más nueva, para que las sesiones del reloj entren en orden.
+    lista.slice().reverse().forEach(a => {
+      const g = actividadGarmin_(a);
+      if (!g || ya.has(g.id)) return;
+      const sesion = g.actividad.tipo === 'fuerza' || g.actividad.tipo === 'flex' ? leerSesionGarmin_(token, g) : null;
+      anadir_('Registro', { id: g.id, cuando: new Date().toISOString(), tipo: 'garmin', dia: g.dia, datos: JSON.stringify({ dia: g.dia, actividad: g.actividad }) });
+      ya.add(g.id);
+      if (sesion && !ya.has(sesion.id)) {
+        const resto = Object.assign({}, sesion);
+        delete resto.id;
+        anadir_('Registro', { id: sesion.id, cuando: new Date().toISOString(), tipo: 'sesion', dia: sesion.dia, datos: JSON.stringify(resto) });
+        ya.add(sesion.id);
+      }
+      nuevas++;
+    });
+    guardarEstado({ ok: true, ultima: lista.length ? String(lista[0].startTimeLocal || '').slice(0, 10) : '' });
+    if (nuevas) sincronizar_();
+    return { ok: true, nuevas };
+  } catch (err) {
+    guardarEstado({ ok: false, error: err.message });
+    return { ok: false, error: err.message };
+  }
+}
+
+function tokenGarmin_(clave) {
+  const cache = CacheService.getScriptCache(), t = cache.get('GARMIN_TOKEN');
+  if (t) return t;
+  const r = UrlFetchApp.fetch(GARMIN_URL + '/personalapitoken-service/personal-api/personal-api-key/token', {
+    method: 'post', headers: { Authorization: 'ApiKey ' + clave, Accept: '*/*' }, muteHttpExceptions: true,
+  });
+  const c = r.getResponseCode();
+  if (c === 401 || c === 403) throw new Error('La clave de Garmin no vale o ha caducado');
+  if (c !== 200) throw new Error('Garmin no da acceso ahora (' + c + ')');
+  const token = r.getContentText().trim();
+  cache.put('GARMIN_TOKEN', token, 6 * 3600 - 60); // el pase dura 24 h; la caché, como mucho 6
+  return token;
+}
+
+function pedirGarmin_(token, ruta) {
+  const r = UrlFetchApp.fetch(GARMIN_URL + ruta, { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, muteHttpExceptions: true });
+  const c = r.getResponseCode();
+  if (c === 401) {
+    CacheService.getScriptCache().remove('GARMIN_TOKEN');
+    throw new Error('Garmin ha caducado el pase; se pedirá otro');
+  }
+  if (c !== 200) throw new Error('Garmin ha contestado ' + c);
+  return r;
+}
+
+// Resumen de una actividad de la lista de Garmin.
+function actividadGarmin_(a) {
+  const inicio = String(a.startTimeLocal || '');
+  const dia = inicio.slice(0, 10);
+  if (!a.activityId || !/^\d{4}-\d{2}-\d{2}$/.test(dia)) return null;
+  const tk = String((a.activityType && a.activityType.typeKey) || '');
+  const tipo = /running/.test(tk) ? 'run' : /strength/.test(tk) ? 'fuerza' : /yoga|pilates|flexib|mobility|breath/.test(tk) ? 'flex' : 'otro';
+  const seg = Number(a.movingDuration || a.duration || a.elapsedDuration || 0), v = Number(a.averageSpeed || 0);
+  const act = {
+    id: String(a.activityId), nombre: String(a.activityName || ''), tipo, clave: tk, hora: inicio.slice(11, 16),
+    min: Math.round(seg / 60), km: a.distance ? Math.round(a.distance / 10) / 100 : 0, ritmo: tipo === 'run' && v > 0 ? Math.round(1000 / v) : null,
+    fc: a.averageHR ? Math.round(a.averageHR) : null, fcMax: a.maxHR ? Math.round(a.maxHR) : null,
+    efecto: a.aerobicTrainingEffect ? Math.round(a.aerobicTrainingEffect * 10) / 10 : null,
+  };
+  if (tipo === 'fuerza') {
+    act.reps = a.totalReps || 0;
+    act.series = a.activeSets || a.totalSets || 0;
+  }
+  return { id: 'g' + act.id, dia, actividad: act };
+}
+
+// Descarga el .FIT de una sesión de fuerza o movilidad. Si se hizo con un entreno de Tangerine, devuelve la sesión ya apuntada.
+function leerSesionGarmin_(token, g) {
+  if (g.dia < PLAN.INICIO) return null;
+  let fit;
+  try {
+    const zip = pedirGarmin_(token, '/download-service/files/activity/' + g.actividad.id).getBlob();
+    const f = Utilities.unzip(zip.setContentType('application/zip')).filter(x => /\.fit$/i.test(x.getName()))[0];
+    if (!f) return null;
+    fit = FIT.leer(f.getBytes());
+  } catch (err) {
+    return null;
+  }
+  g.actividad.entreno = fit.entreno || '';
+  const plan = ENTRENOS_GARMIN_[fit.entreno || g.actividad.nombre];
+  if (!plan) return null;
+  const E = PLAN.estado(registro_());
+  const base = { id: 's' + g.actividad.id, dia: g.dia, para: PLAN.paraTipo(E, g.dia, plan), plan, garmin: g.actividad.id, reloj: true, minutos: g.actividad.min };
+  const activas = fit.series.filter(x => x.activa);
+  if (plan === 'test') {
+    const prueba = { dominadas: 0, fondos: 0, flexiones: 0 };
+    activas.forEach(x => { const id = PRUEBA_GARMIN_[x.cat + ':' + x.nombre]; if (id) prueba[id] = Math.max(prueba[id], x.reps || 0); });
+    return Object.assign(base, { prueba });
+  }
+  if (plan === 'sab') return base;
+  const series = {};
+  activas.forEach(x => {
+    const id = EJERCICIOS_GARMIN_[x.cat + ':' + x.nombre];
+    if (!id) return;
+    (series[id] = series[id] || []).push(PLAN.EJ[id].u === 's' ? (x.seg || 0) : (x.reps || 0));
+  });
+  // Escalón: si la app decía «hoy subes», las series ya son del escalón nuevo.
+  const sube = PLAN.SESIONES[plan].filter(([, id, n]) => series[id] && PLAN.sugerir(PLAN.EJ[id], E.paso[id], E.ult[id], n).sube).map(([, id]) => id);
+  return Object.assign(base, { series, sube });
+}
+
+// <fit>
+// Lector mínimo de archivos .FIT de actividad: el deporte, el nombre del entreno y cada serie de fuerza.
+// Solo usa JavaScript normal (funciona en Apps Script). Se copia en Codigo.gs con `node sincronizar.js`.
+const FIT = (() => {
+  const SESION = 18, ENTRENO = 26, SERIE = 225;
+  function leer(bytes) {
+    const b = bytes.map ? bytes.map(x => x & 0xFF) : Array.from(bytes, x => x & 0xFF);
+    const cab = b[0];
+    if (String.fromCharCode(b[8], b[9], b[10], b[11]) !== '.FIT') throw new Error('No es un archivo FIT');
+    const fin = cab + (b[4] | b[5] << 8 | b[6] << 16 | b[7] << 24);
+    const defs = {}, out = { deporte: null, subdeporte: null, entreno: '', series: [] };
+    let i = cab;
+    const num = (p, n, be) => { let v = 0; for (let k = 0; k < n; k++) v += b[p + (be ? n - 1 - k : k)] * Math.pow(256, k); return v; };
+    while (i < fin) {
+      const h = b[i++];
+      if ((h & 0x80) === 0 && (h & 0x40)) {
+        const be = b[i + 1] === 1, global = num(i + 2, 2, be), n = b[i + 4];
+        i += 5;
+        const campos = [];
+        for (let k = 0; k < n; k++, i += 3) campos.push({ id: b[i], tam: b[i + 1], tipo: b[i + 2] & 0x1F });
+        let dev = 0;
+        if (h & 0x20) { const nd = b[i++]; for (let k = 0; k < nd; k++, i += 3) dev += b[i + 1]; }
+        defs[h & 0x0F] = { global, campos, dev, be };
+        continue;
+      }
+      const d = defs[(h & 0x80) ? (h >> 5) & 0x03 : h & 0x0F];
+      if (!d) throw new Error('FIT raro: dato sin definición');
+      const v = {};
+      for (const c of d.campos) {
+        if (d.global === ENTRENO && c.id === 8) {
+          let s = '';
+          for (let k = 0; k < c.tam && b[i + k]; k++) s += '%' + ('0' + b[i + k].toString(16)).slice(-2);
+          try { v[c.id] = decodeURIComponent(s); } catch (e) { v[c.id] = ''; }
+        } else if (c.tipo === 0x04 || c.tipo === 0x0B) { // uint16 (también listas)
+          const l = [];
+          for (let k = 0; k < c.tam; k += 2) l.push(num(i + k, 2, d.be));
+          v[c.id] = l.length === 1 ? l[0] : l;
+        } else if (c.tam === 4) v[c.id] = num(i, 4, d.be);
+        else if (c.tam === 1) v[c.id] = b[i];
+        i += c.tam;
+      }
+      i += d.dev;
+      if (d.global === SESION) { out.deporte = v[5]; out.subdeporte = v[6]; }
+      if (d.global === ENTRENO && v[8]) out.entreno = v[8];
+      if (d.global === SERIE) {
+        const pri = x => (Array.isArray(x) ? x[0] : x);
+        const ok = x => (x == null || x === 0xFFFF || x === 0xFF || x === 0xFFFFFFFF ? null : x);
+        out.series.push({
+          activa: v[5] === 1,
+          reps: ok(v[3]),
+          seg: ok(v[0]) == null ? null : Math.round(v[0] / 1000),
+          cat: ok(pri(v[7])),
+          nombre: ok(pri(v[8])),
+          paso: ok(v[11]),
+        });
+      }
+    }
+    return out;
+  }
+  return { leer };
+})();
+// </fit>
 
 // ---------- Google Calendar ----------
 
@@ -444,9 +678,10 @@ const PLAN = (() => {
     const E = {
       paso: {}, ult: {}, hechos: {}, saltados: {}, movidos: [], pausas: PAUSAS.map(p => ({ ...p, fija: true })),
       correr: { sem: 0, hechas: 0, duros: 0 }, rodilla: [], pruebas: [{ ...PRUEBA_INICIAL, inicial: true }], subidas: [], muscleup: null,
+      garmin: [], garminDia: {},
     };
     Object.keys(EJ).forEach(id => { E.paso[id] = EJ[id].paso; });
-    const quitadas = new Set();
+    const quitadas = new Set(), ignorados = new Set();
     for (const e of L) {
       if (e.tipo === 'sesion') {
         const para = e.para || e.dia;
@@ -485,7 +720,16 @@ const PLAN = (() => {
       else if (e.tipo === 'saltar') E.saltados[e.dia] = true;
       else if (e.tipo === 'pausa') E.pausas.push({ id: e.id, desde: e.desde, hasta: e.hasta, motivo: e.motivo || 'Pausa' });
       else if (e.tipo === 'quitarPausa') quitadas.add(e.ref);
+      else if (e.tipo === 'garmin' && e.actividad) { E.garmin.push(e); (E.garminDia[e.dia] = E.garminDia[e.dia] || []).push(e.actividad); }
+      else if (e.tipo === 'ignorar') ignorados.add(String(e.ref));
     }
+    // Una actividad del reloj ya está apuntada si una sesión la lleva, si ese día ya hay una sesión de su clase o si se ignoró.
+    const conReloj = new Set(L.filter(e => e.tipo === 'sesion' && e.garmin).map(e => String(e.garmin)));
+    const claseDe = { run: 'run', fuerza: 'cal', flex: 'mov' };
+    const diasClase = new Set(L.filter(e => e.tipo === 'sesion').map(e => e.dia + ':' + clase(e.plan)));
+    E.garmin.forEach(g => {
+      g.enlazado = conReloj.has(String(g.actividad.id)) || ignorados.has(g.id) || diasClase.has(g.dia + ':' + claseDe[g.actividad.tipo]) || !claseDe[g.actividad.tipo];
+    });
     E.pausas = E.pausas.filter(p => !quitadas.has(p.id)).sort((a, b) => (a.desde < b.desde ? -1 : 1));
     // Cambios de día: intercambian lo que había en los dos días, en orden.
     E.asignado = {};
@@ -586,12 +830,39 @@ const PLAN = (() => {
     };
   }
 
+  // Qué día del plan cubre una sesión de tipo `tipo` hecha el día d: ese mismo si tocaba eso;
+  // si no, el primero de esa semana que tocara y siga pendiente; si no hay, el propio día.
+  function paraTipo(E, d, tipo) {
+    const x = dia(E, d);
+    if (x.tipo === tipo && !x.hecho) return d;
+    for (let i = 0; i < 7; i++) {
+      const y = dia(E, diaMas(lunes(d), i));
+      if (y.tipo === tipo && !y.hecho && !y.saltado && !y.pausa) return y.dia;
+    }
+    return d;
+  }
+  const paraCarrera = (E, d) => paraTipo(E, d, 'run');
+  // Nombre del entreno del reloj para cada sesión (los archivos de garmin/entrenos).
+  function entrenoReloj(E, tipo) {
+    if (tipo === 'A' || tipo === 'B') return 'Calistenia ' + tipo;
+    if (tipo === 'test') return 'Prueba máximos';
+    if (tipo === 'sab') return 'Movilidad sábado';
+    if (tipo === 'run') return E.correr.sem < CORRER.length ? 'Correr S' + (E.correr.sem + 1) : null;
+    return null;
+  }
+  // Lo que se pone en Correr/Caminar del reloj esa semana (null si es carrera seguida).
+  function reloj(sem) {
+    const w = correrDe(sem);
+    return w.fase === 1 && w.a ? { correr: fm(w.c), caminar: fm(w.a) } : null;
+  }
+  const ritmo = s => s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '/km' : '';
+
   function faseDe(d) { let f = FASES[0]; FASES.forEach(x => { if (d >= x.desde) f = x; }); return f; }
 
   return {
     INICIO, INICIO_CAL, CARRERA, SEMANA, HORA, DIAS, MESES, EJ, SESIONES, PRUEBA, CORRER, FASES, MOV,
     diaMas, entre, semanaDia, lunes, corta, fm, correrDe, tramosCorrer, tramosMov, minutos, sugerir,
-    estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte,
+    estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte, paraTipo, paraCarrera, entrenoReloj, reloj, ritmo,
   };
 })();
 // </plan>
