@@ -829,7 +829,8 @@ function bucle(now) {
 // Lógica de Tangerine: qué toca cada día, escalones, correr, pruebas, recolocar y resumen semanal.
 // Son funciones puras sobre el registro. Este bloque se copia en Codigo.gs y Panel.html con `node sincronizar.js`.
 const PLAN = (() => {
-  const INICIO = '2026-11-02'; // lunes de la primera semana
+  const INICIO = '2026-11-02'; // lunes de la primera semana (correr empieza el martes 3)
+  const INICIO_CAL = '2026-11-09'; // la calistenia empieza una semana después; A/B y la prueba cuentan desde aquí
   const CARRERA = { nombre: 'Mitja Marató Costa Barcelona Maresme', corto: 'Media de la Maresme', dia: '2027-10-31', lugar: 'Pineda de Mar → Calella' };
   // Lunes a domingo. 'cal' se convierte en A o B según la semana; el viernes de cada 4.ª semana es la prueba.
   const SEMANA = ['cal', 'run', 'cal', 'run', 'cal', 'sab', 'run'];
@@ -998,8 +999,10 @@ const PLAN = (() => {
   function pausaDe(E, dia) { return E.pausas.find(p => dia >= p.desde && dia <= p.hasta) || null; }
   function tipoBase(dia) {
     if (dia < INICIO) return null;
-    const w = Math.floor(entre(INICIO, dia) / 7), d = semanaDia(dia), b = SEMANA[d];
+    const d = semanaDia(dia), b = SEMANA[d];
     if (b !== 'cal') return b;
+    if (dia < INICIO_CAL) return null;
+    const w = Math.floor(entre(INICIO_CAL, dia) / 7);
     if (d === 4 && (w + 1) % 4 === 0) return 'test';
     const orden = w % 2 === 0 ? ['A', 'B', 'A'] : ['B', 'A', 'B'];
     return orden[[0, 2, 4].indexOf(d)];
@@ -1089,7 +1092,7 @@ const PLAN = (() => {
   function faseDe(d) { let f = FASES[0]; FASES.forEach(x => { if (d >= x.desde) f = x; }); return f; }
 
   return {
-    INICIO, CARRERA, SEMANA, HORA, DIAS, MESES, EJ, SESIONES, PRUEBA, CORRER, FASES, MOV,
+    INICIO, INICIO_CAL, CARRERA, SEMANA, HORA, DIAS, MESES, EJ, SESIONES, PRUEBA, CORRER, FASES, MOV,
     diaMas, entre, semanaDia, lunes, corta, fm, correrDe, tramosCorrer, tramosMov, minutos, sugerir,
     estado, dia, semana, pendientes, titulo, clase, detalle, hitos, resumen, faseDe, pausaDe, esFuerte,
   };
