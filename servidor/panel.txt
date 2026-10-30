@@ -30,6 +30,11 @@
     --mov: #8de0ae;
     --bad: #ff6b5e;
     --far: #8a8077;
+    --z1: color-mix(in srgb, var(--run) 22%, var(--surface));
+    --z2: color-mix(in srgb, var(--run) 42%, var(--surface));
+    --z3: color-mix(in srgb, var(--run) 62%, var(--surface));
+    --z4: color-mix(in srgb, var(--run) 82%, var(--surface));
+    --z5: var(--run);
     --prop: #3f3833;
     --font: 'Space Grotesk', -apple-system, system-ui, sans-serif;
   }
@@ -342,6 +347,30 @@
 
   .aviso-flotante { position: absolute; left: 50%; bottom: 88px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--text); color: var(--ink); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 14px; transition: .25s; z-index: 9; max-width: calc(100% - 40px); text-align: center; }
   .aviso-flotante.ver { opacity: 1; transform: translate(-50%, 0); }
+
+  /* Resumen de un entreno y forma física */
+  .zonas { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; }
+  .zonas i { display: block; min-width: 2px; }
+  .zonas-pie { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .zonas-pie span { display: flex; flex-direction: column; }
+  .zonas-pie b { color: var(--text); font-weight: 600; font-size: 13px; }
+  .z1 { background: var(--z1); } .z2 { background: var(--z2); } .z3 { background: var(--z3); } .z4 { background: var(--z4); } .z5 { background: var(--z5); }
+  .efecto { display: grid; grid-template-columns: 96px 1fr 34px; align-items: center; gap: 10px; font-size: 14px; }
+  .efecto i { display: block; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+  .efecto em { display: block; height: 100%; background: var(--tang); border-radius: 4px; }
+  .efecto b { text-align: right; font-variant-numeric: tabular-nums; }
+  .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 0; }
+  .datos div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 14px; }
+  .datos dt { color: var(--muted); }
+  .datos dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .semaforo { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .semaforo i { width: 10px; height: 10px; border-radius: 5px; }
+  .semaforo .verde { background: var(--mov); } .semaforo .ambar { background: var(--tang); } .semaforo .rojo { background: var(--bad); }
+  .tabla tr[data-act] { cursor: pointer; }
+  .tabla tr[data-act] td:first-child { color: var(--text); text-decoration: underline; text-decoration-color: var(--track); text-underline-offset: 3px; }
+  .g-banda { fill: var(--mov); opacity: .12; }
+  .g-barra { fill: var(--mov); }
+  .g-barra.baja { fill: var(--track); }
 
   /* Pantalla de carga: la mandarina bota como una pelota mientras llegan tus datos. */
   .splash { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; transition: opacity .45s ease; }
@@ -1190,6 +1219,7 @@ const PLAN = (() => {
   let COLA = DEMO ? [] : LS.get('cola', []);
   let CALENDARIO = LS.get('calendario', true);
   let GARMIN = DEMO ? (DEMO.garmin || null) : LS.get('garmin', null);
+  let SALUD = DEMO ? (DEMO.salud || null) : LS.get('salud', null);
   let E = null;
   let tab = LS.get('tab', 'today');
   if (!['today', 'plan', 'progress'].includes(tab)) tab = 'today';
@@ -1255,6 +1285,8 @@ const PLAN = (() => {
     LOG = d.log || [];
     CALENDARIO = d.calendario !== false;
     GARMIN = d.garmin || null;
+    SALUD = d.salud || null;
+    LS.set('salud', SALUD);
     LS.set('log', LOG);
     LS.set('calendario', CALENDARIO);
     LS.set('garmin', GARMIN);
@@ -1398,7 +1430,7 @@ const PLAN = (() => {
     // Lo que trajo el reloj y aún no está apuntado (últimos 7 días).
     E.garmin.filter(g => !g.enlazado && g.dia >= P.diaMas(hoy, -7) && g.dia >= P.INICIO).forEach(g => {
       const a = g.actividad;
-      if (a.tipo === 'run') h += `<section class="tarjeta aviso"><p><b>Carrera del reloj · ${etiDia(g.dia, hoy).toLowerCase()} ${a.hora}</b><br>${esc(lineaReloj(a))}</p><div class="fila"><button class="btn peque" data-carrera="${g.id}">Apuntar rodilla y sensación</button></div></section>`;
+      if (a.tipo === 'run') h += `<section class="tarjeta aviso"><p><b>Carrera del reloj · ${etiDia(g.dia, hoy).toLowerCase()} ${a.hora}</b><br>${esc(lineaReloj(a))}</p><div class="fila"><button class="btn peque" data-carrera="${g.id}">Apuntar rodilla y sensación</button><button class="btn sec peque" data-act="${g.id}">Ver el entreno</button></div></section>`;
       else {
         const plan = (P.dia(E, g.dia).tipo === 'B' || P.dia(E, g.dia).tipo === 'A') ? P.dia(E, g.dia).tipo : 'A';
         h += `<section class="tarjeta aviso"><p><b>${a.tipo === 'flex' ? 'Movilidad' : 'Fuerza'} en el reloj · ${etiDia(g.dia, hoy).toLowerCase()} ${a.hora}</b><br>${esc(lineaReloj(a))}${a.tipo === 'fuerza' ? '. No se hizo con un entreno de Tangerine, así que no sé qué series eran.' : ''}</p>
@@ -1421,6 +1453,8 @@ const PLAN = (() => {
       h += `<section class="ahora quieto"><span class="eti">Hoy · hecho</span><h2>${P.titulo(x.tipo)} ${ico.checkG}</h2><p>${esc(resumenDe(x.hecho))}</p>${sig ? `<p>${etiDia(sig.dia, hoy)} ${sig.hora} · ${P.titulo(sig.tipo)}</p>` : ''}</section>`;
     } else if (x.saltado) h += `<section class="ahora quieto"><span class="eti">Hoy</span><h2>Saltado</h2><p>${P.titulo(x.tipo)} no cuenta esta vez.</p><button class="btn sec peque" style="align-self:flex-start;margin-top:8px" data-volver="${hoy}">Deshacer</button></section>`;
     else h += `<section class="ahora k-${k}"><span class="eti">Hoy · ${x.hora}</span><h2>${P.titulo(x.tipo)}</h2><p>${esc(P.detalle(E, x))}</p>${GARMIN && GARMIN.conectado && P.entrenoReloj(E, x.tipo) ? `<p>En el reloj: entreno «${esc(P.entrenoReloj(E, x.tipo))}»</p>` : ''}<button class="btn osc" data-abrir="${hoy}">Empezar</button></section>`;
+
+    h += tarjetaHoySalud(hoy);
 
     const ayer = P.dia(E, P.diaMas(hoy, -1));
     if (ayer.hecho && ayer.hecho.plan === 'run') {
@@ -1551,6 +1585,7 @@ const PLAN = (() => {
         <div class="mes">${mes}</div>
         <div class="leyenda"><span><i></i>Calistenia</span><span><i class="k-run"></i>Correr</span><span><i class="k-mov"></i>Movilidad</span></div></section>
       ${tarjetaRodilla()}
+      ${tarjetaForma(hoy)}
       ${tarjetaReloj(hoy)}
       <section class="tarjeta"><span class="eti">Camino al muscle-up</span>
         <ol class="camino"><li class="ok"><i>${ico.check}</i><b>Negativas</b><em>desde el ${Number(P.INICIO.slice(8))}/${Number(P.INICIO.slice(5, 7))}</em></li>${hit.map((x, i) => `<li class="${x.hecho ? 'ok' : i === iAct ? 'act' : ''}"><i>${x.hecho ? ico.check : ''}</i><b>${x.n}</b><em>${x.hecho ? 'hecho' : esc(x.cuando)}</em></li>`).join('')}</ol>
@@ -1589,6 +1624,94 @@ const PLAN = (() => {
       <details class="ver-tabla"><summary>Ver como tabla</summary><table class="tabla"><thead><tr><th>Día</th><th>Rodilla</th></tr></thead><tbody>${E.rodilla.slice().reverse().map(r => `<tr><td>${P.corta(r.dia)}${r.k === 'manana' ? ' (mañana)' : ''}</td><td>${r.k === 'run' ? r.v + '/10' : r.v}</td></tr>`).join('')}</tbody></table></details></section>`;
   }
 
+  const HRV_ESTADO = { BALANCED: 'equilibrada', UNBALANCED: 'desequilibrada', LOW: 'baja', POOR: 'muy baja' };
+  const SUENO_CAL = { EXCELLENT: 'excelente', GOOD: 'bueno', FAIR: 'regular', POOR: 'malo' };
+  const ETIQUETA = { RECOVERY: 'Recuperación', BASE: 'Base', TEMPO: 'Tempo', LACTATE_THRESHOLD: 'Umbral', THRESHOLD: 'Umbral', VO2MAX: 'VO2 máx', ANAEROBIC_CAPACITY: 'Capacidad anaeróbica', SPEED: 'Velocidad', NO_BENEFIT: 'Sin efecto' };
+  const saludDe = d => SALUD && SALUD.dias ? SALUD.dias.find(x => x.dia === d) || null : null;
+  const coma = n => String(n).replace('.', ',');
+
+  // Cómo llegas hoy: sueño, HRV y Body Battery de esta noche, con un consejo sencillo.
+  function tarjetaHoySalud(hoy) {
+    const s = saludDe(hoy);
+    if (!s || (!s.sueno && !s.hrv && !s.bateria)) return '';
+    const rojo = (s.hrv && /LOW|POOR/.test(s.hrv.estado || '')) || (s.sueno && s.sueno.puntos != null && s.sueno.puntos < 60) || (s.bateria && s.bateria.max < 50);
+    const ambar = !rojo && ((s.hrv && s.hrv.estado === 'UNBALANCED') || (s.sueno && s.sueno.puntos != null && s.sueno.puntos < 75) || (s.bateria && s.bateria.max < 70));
+    const color = rojo ? 'rojo' : ambar ? 'ambar' : 'verde';
+    const consejo = rojo ? 'Hoy, suave: haz el entreno sin forzar y, si cuesta, quita una serie o anda más.' : ambar ? 'Puedes entrenar normal, pero escucha al cuerpo.' : 'Todo en verde para entrenar.';
+    const datos = [];
+    if (s.sueno) datos.push(`<div><dt>Sueño</dt><dd>${coma(s.sueno.horas)} h${s.sueno.puntos != null ? ' · ' + s.sueno.puntos : ''}</dd></div>`);
+    if (s.hrv && s.hrv.noche) datos.push(`<div><dt>HRV</dt><dd>${s.hrv.noche} ms · ${HRV_ESTADO[s.hrv.estado] || '—'}</dd></div>`);
+    if (s.bateria) datos.push(`<div><dt>Body Battery</dt><dd>${s.bateria.max}</dd></div>`);
+    if (SALUD.reposo) datos.push(`<div><dt>Reposo</dt><dd>${SALUD.reposo} ppm</dd></div>`);
+    return `<section class="tarjeta"><span class="eti">Cómo llegas hoy · del reloj</span><span class="semaforo"><i class="${color}"></i>${consejo}</span><dl class="datos">${datos.join('')}</dl></section>`;
+  }
+
+  // Forma física: VO2máx, edad física, reposo, HRV de 14 noches y sueño de 7.
+  function tarjetaForma(hoy) {
+    if (!SALUD && !E.garmin.some(g => g.actividad.vo2)) return '';
+    const vo2s = E.garmin.filter(g => g.actividad.vo2).sort((a, b) => (a.dia < b.dia ? -1 : 1));
+    const vo2 = vo2s.length ? vo2s[vo2s.length - 1] : null;
+    const dias = (SALUD && SALUD.dias) || [];
+    let h = `<section class="tarjeta"><span class="eti">Forma física · del reloj</span>
+      <div class="cifras"><div><b>${vo2 ? vo2.actividad.vo2 : '—'}</b><small>VO2máx${vo2 ? ' · ' + P.corta(vo2.dia) : ''}</small></div><div><b>${SALUD && SALUD.edadForma != null ? SALUD.edadForma : '—'}</b><small>edad física</small></div><div><b>${SALUD && SALUD.reposo ? SALUD.reposo : '—'}</b><small>ppm en reposo</small></div></div>`;
+    const hrv = dias.filter(d => d.hrv && d.hrv.noche);
+    if (hrv.length > 1) {
+      const W = 320, H = 110, L = 26, R = 8, T = 10, B = 20;
+      const vals = hrv.map(d => d.hrv.noche), ult = hrv[hrv.length - 1].hrv;
+      const lo = Math.min(...vals, ult.bajo || 999) - 5, hi = Math.max(...vals, ult.alto || 0) + 5;
+      const X = i => L + (W - L - R) * i / (hrv.length - 1), Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+      const linea = 'M' + vals.map((v, i) => X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' L');
+      h += `<span class="eti">HRV por la noche · ms</span>
+        <svg class="grafica" viewBox="0 0 ${W} ${H}" role="img" aria-label="HRV de cada noche, ${hrv.length} noches">
+          ${ult.bajo && ult.alto ? `<rect class="g-banda" x="${L}" y="${Y(ult.alto).toFixed(1)}" width="${W - L - R}" height="${(Y(ult.bajo) - Y(ult.alto)).toFixed(1)}"/><text class="g-txt" x="${W - R}" y="${(Y(ult.alto) - 3).toFixed(1)}" text-anchor="end">tu zona normal</text>` : ''}
+          ${[lo + 5, hi - 5].map(v => `<text class="g-txt" x="${L - 5}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${Math.round(v)}</text>`).join('')}
+          <path class="g-linea" d="${linea}"/>${vals.map((v, i) => `<circle class="g-pt" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="4"><title>${P.corta(hrv[i].dia)}: ${v} ms</title></circle>`).join('')}
+          <text class="g-txt" x="${L}" y="${H - 4}">${P.corta(hrv[0].dia)}</text><text class="g-txt" x="${W - R}" y="${H - 4}" text-anchor="end">${P.corta(hrv[hrv.length - 1].dia)}</text>
+        </svg>`;
+    }
+    const sue = dias.filter(d => d.sueno).slice(-7);
+    if (sue.length) {
+      const W = 320, H = 100, T = 14, B = 18, bw = Math.min(30, (W - 8 * sue.length) / sue.length), max = Math.max(9, ...sue.map(d => d.sueno.horas));
+      h += `<span class="eti">Sueño · horas</span><svg class="grafica" viewBox="0 0 ${W} ${H}" role="img" aria-label="Horas de sueño de las últimas ${sue.length} noches">
+        ${sue.map((d, i) => { const x = 4 + i * (W - 8) / sue.length + ((W - 8) / sue.length - bw) / 2, hh = (H - T - B) * d.sueno.horas / max, y = H - B - hh;
+          return `<rect class="g-barra ${d.sueno.horas < 7 ? 'baja' : ''}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="4"><title>${P.corta(d.dia)}: ${coma(d.sueno.horas)} h${d.sueno.puntos != null ? ', puntuación ' + d.sueno.puntos : ''}</title></rect>
+            <text class="g-txt" x="${(x + bw / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" text-anchor="middle">${coma(d.sueno.horas)}</text>
+            <text class="g-txt" x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${'LMXJVSD'[P.semanaDia(d.dia)]}</text>`; }).join('')}
+      </svg><p class="peq">En gris, las noches de menos de 7 h.</p>`;
+    }
+    return h + '</section>';
+  }
+
+  // Resumen de una actividad del reloj.
+  function abrirActividad(id) {
+    const g = E.garmin.find(x => x.id === id);
+    if (!g) return;
+    const a = g.actividad, hoy = hoyDe();
+    ses = { k: 'actividad' };
+    const zt = (a.zonas || []).reduce((s, v) => s + v, 0);
+    const datos = [];
+    if (a.fc) datos.push(['Pulso medio', a.fc + ' ppm']);
+    if (a.fcMax) datos.push(['Pulso máximo', a.fcMax + ' ppm']);
+    if (a.ritmo) datos.push(['Ritmo', P.ritmo(a.ritmo)]);
+    if (a.cadencia) datos.push(['Cadencia', a.cadencia + ' pasos/min']);
+    if (a.carga) datos.push(['Carga', a.carga]);
+    if (a.vo2) datos.push(['VO2máx', a.vo2]);
+    if (a.kcal) datos.push(['Calorías', a.kcal + ' kcal']);
+    if (a.desnivel) datos.push(['Desnivel', a.desnivel + ' m']);
+    const ses2 = Object.values(E.hechos).find(h => String(h.garmin) === a.id);
+    const series = ses2 && ses2.series ? Object.keys(ses2.series).filter(k => P.EJ[k]).map(k => `<li><b>${esc(P.EJ[k].n)}</b> · ${ses2.series[k].join(' · ')}${P.EJ[k].u === 's' ? ' s' : ''}</li>`).join('') : '';
+    const barra = (n, v) => v != null ? `<div class="efecto"><span>${n}</span><i><em style="width:${Math.min(100, v / 5 * 100)}%"></em></i><b>${coma(v)}</b></div>` : '';
+    hoja.innerHTML = `${cabecera(etiFecha(g.dia, hoy) + (a.hora ? ' · ' + a.hora : ''), a.entreno || a.nombre || 'Actividad', lineaReloj(a))}
+      <div class="sh-main fin">
+        ${zt ? `<span class="eti">Zonas de pulso · minutos</span><div class="zonas" role="img" aria-label="Minutos en cada zona">${a.zonas.map((v, i) => v ? `<i class="z${i + 1}" style="flex:${v}" title="Zona ${i + 1}: ${coma(v)} min"></i>` : '').join('')}</div>
+          <div class="zonas-pie">${a.zonas.map((v, i) => `<span><b>${coma(v)}</b>Z${i + 1}</span>`).join('')}</div>` : ''}
+        ${a.efecto != null || a.anaerobico != null ? `<span class="eti">Efecto del entreno${a.etiqueta ? ' · ' + esc(ETIQUETA[a.etiqueta] || a.etiqueta.toLowerCase()) : ''}</span>${barra('Aeróbico', a.efecto)}${barra('Anaeróbico', a.anaerobico)}<p class="peq">De 0 a 5: 2–3 mantiene, 3–4 mejora, más de 4 es muy exigente.</p>` : ''}
+        ${datos.length ? `<dl class="datos">${datos.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+        ${series ? `<span class="eti">Series que contó el reloj</span><ul class="listado">${series}</ul>` : ''}
+      </div>`;
+    abrirHoja();
+  }
+
   // Lo que ha registrado el reloj: la semana en minutos y las últimas actividades.
   function tarjetaReloj(hoy) {
     if (!E.garmin.length) return GARMIN && GARMIN.conectado ? '<section class="tarjeta"><span class="eti">Del reloj</span><p class="sub">Aún no ha llegado ninguna actividad de Garmin.</p></section>' : '';
@@ -1599,7 +1722,8 @@ const PLAN = (() => {
     const nombre = a => a.entreno || a.nombre || ({ run: 'Carrera', fuerza: 'Fuerza', flex: 'Movilidad' })[a.tipo] || 'Actividad';
     return `<section class="tarjeta"><span class="eti">Del reloj · esta semana</span>
       <div class="cifras"><div><b>${String(Math.round(km * 10) / 10).replace('.', ',')}</b><small>km corriendo</small></div><div><b>${suma('run')}′</b><small>corriendo</small></div><div><b>${suma('fuerza')}′</b><small>fuerza</small></div></div>
-      <table class="tabla"><thead><tr><th>Últimas</th><th>Min</th><th>Km / repes</th><th>Pulso</th></tr></thead><tbody>${ult.map(g => { const a = g.actividad; return `<tr><td>${P.corta(g.dia)} · ${esc(nombre(a))}</td><td>${a.min}</td><td>${a.tipo === 'run' ? String(a.km).replace('.', ',') + (a.ritmo ? ' · ' + P.ritmo(a.ritmo) : '') : a.reps || '—'}</td><td>${a.fc || '—'}</td></tr>`; }).join('')}</tbody></table>
+      <table class="tabla"><thead><tr><th>Últimas</th><th>Min</th><th>Km / repes</th><th>Pulso</th></tr></thead><tbody>${ult.map(g => { const a = g.actividad; return `<tr data-act="${g.id}" tabindex="0"><td>${P.corta(g.dia)} · ${esc(nombre(a))}</td><td>${a.min}</td><td>${a.tipo === 'run' ? String(a.km).replace('.', ',') + (a.ritmo ? ' · ' + P.ritmo(a.ritmo) : '') : a.reps || '—'}</td><td>${a.fc || '—'}</td></tr>`; }).join('')}</tbody></table>
+      <p class="peq">Toca una para ver el resumen: pulso, zonas, efecto y carga.</p>
       ${GARMIN && GARMIN.cuando ? `<p class="peq">Garmin mirado ${new Date(GARMIN.cuando).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}${GARMIN.ok === false ? ' · ' + esc(GARMIN.error) : ''}</p>` : ''}</section>`;
   }
 
@@ -2019,6 +2143,8 @@ const PLAN = (() => {
   document.addEventListener('click', ev => {
     const g = ev.target.closest('[data-pt]');
     if (g) { ptSel = +g.dataset.pt; return pintar(); }
+    const act = ev.target.closest('[data-act]');
+    if (act) return abrirActividad(act.dataset.act);
     const b = ev.target.closest('button');
     if (!b || b.disabled) return;
     const ds = b.dataset;

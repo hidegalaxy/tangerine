@@ -183,8 +183,7 @@ const ACCIONES_ = {
       CacheService.getScriptCache().remove('GARMIN_TOKEN');
       const clave = String(d.garmin).trim();
       if (!clave) {
-        props.deleteProperty('GARMIN_KEY');
-        props.deleteProperty('GARMIN_ESTADO');
+        ['GARMIN_KEY', 'GARMIN_ESTADO', 'SALUD', 'SALUD_CUANDO'].forEach(x => props.deleteProperty(x));
         return { msg: 'Garmin desconectado' };
       }
       props.setProperty('GARMIN_KEY', clave);
@@ -214,7 +213,10 @@ function datos_() {
   }
   let estado = {};
   try { estado = JSON.parse(props.getProperty('GARMIN_ESTADO') || '{}'); } catch (err) {}
+  let salud = null;
+  try { salud = JSON.parse(props.getProperty('SALUD') || 'null'); } catch (err) {}
   return {
+    salud: props.getProperty('GARMIN_KEY') ? salud : null,
     garmin: Object.assign({ conectado: !!props.getProperty('GARMIN_KEY') }, estado),
     log: registro_(),
     hoy: diaDe_(new Date()),
@@ -264,12 +266,51 @@ function garmin_(dias) {
       nuevas++;
     });
     guardarEstado({ ok: true, ultima: lista.length ? String(lista[0].startTimeLocal || '').slice(0, 10) : '' });
+    // La salud del día (sueño, HRV, Body Battery…) cambia a lo largo del día: se repasa como mucho cada hora.
+    if (dias > 3 || Date.now() - Number(props.getProperty('SALUD_CUANDO') || 0) > 3600000) salud_(token);
     if (nuevas) sincronizar_();
     return { ok: true, nuevas };
   } catch (err) {
     guardarEstado({ ok: false, error: err.message });
     return { ok: false, error: err.message };
   }
+}
+
+// Sueño, HRV, Body Battery, estrés y edad física de los últimos 14 días. Se guarda entero (se sobrescribe).
+function salud_(token) {
+  const props = PropertiesService.getScriptProperties();
+  const hoy = diaDe_(new Date()), desde = PLAN.diaMas(hoy, -13);
+  const leer = ruta => { try { return JSON.parse(pedirGarmin_(token, ruta).getContentText()); } catch (err) { return null; } };
+  const dias = {};
+  const dia = d => (dias[d] = dias[d] || { dia: d });
+  const sueno = leer('/sleep-service/sleep/dailySleepSummariesByDate?startDate=' + desde + '&endDate=' + hoy);
+  (Array.isArray(sueno) ? sueno : (sueno && sueno.dailySleepSummaries) || []).forEach(x => {
+    if (!x || !x.calendarDate || !x.sleepTimeSeconds) return;
+    const o = x.sleepScores && x.sleepScores.overall;
+    dia(x.calendarDate).sueno = { horas: Math.round(x.sleepTimeSeconds / 360) / 10, puntos: o ? o.value : null, calidad: o ? o.qualifierKey : null, fc: x.avgHeartRate || null };
+  });
+  const hrv = leer('/hrv-service/hrv/daily/' + desde + '/' + hoy);
+  ((hrv && hrv.hrvSummaries) || []).forEach(x => {
+    if (!x.calendarDate) return;
+    dia(x.calendarDate).hrv = { noche: x.lastNightAvg || null, semana: x.weeklyAvg || null, estado: x.status || null, bajo: x.baseline ? x.baseline.balancedLow : null, alto: x.baseline ? x.baseline.balancedUpper : null };
+  });
+  const res = leer('/usersummary-service/v2/dailysummaries?startDate=' + desde + '&endDate=' + hoy);
+  ((res && res.data) || (Array.isArray(res) ? res : [])).forEach(x => {
+    if (!x.calendarDate) return;
+    const b = x.bodyBattery || {}, e = x.stress || {};
+    dia(x.calendarDate).bateria = b.maxValue != null ? { max: b.maxValue, min: b.minValue, ahora: b.latestValue } : null;
+    dia(x.calendarDate).estres = e.avgLevel != null ? e.avgLevel : null;
+  });
+  const fa = leer('/fitnessage-service/fitnessage/v2/' + hoy);
+  const salud = {
+    cuando: new Date().toISOString(),
+    dias: Object.keys(dias).sort().map(d => dias[d]),
+    edadForma: fa && fa.fitnessAge != null ? Math.round(fa.fitnessAge) : null,
+    reposo: fa && fa.components && fa.components.rhr ? fa.components.rhr.value : null,
+  };
+  props.setProperty('SALUD', JSON.stringify(salud));
+  props.setProperty('SALUD_CUANDO', String(Date.now()));
+  return salud;
 }
 
 function tokenGarmin_(clave) {
@@ -310,6 +351,15 @@ function actividadGarmin_(a) {
     min: Math.round(seg / 60), km: a.distance ? Math.round(a.distance / 10) / 100 : 0, ritmo: tipo === 'run' && v > 0 ? Math.round(1000 / v) : null,
     fc: a.averageHR ? Math.round(a.averageHR) : null, fcMax: a.maxHR ? Math.round(a.maxHR) : null,
     efecto: a.aerobicTrainingEffect ? Math.round(a.aerobicTrainingEffect * 10) / 10 : null,
+    anaerobico: a.anaerobicTrainingEffect ? Math.round(a.anaerobicTrainingEffect * 10) / 10 : null,
+    etiqueta: a.trainingEffectLabel || null,
+    carga: a.activityTrainingLoad ? Math.round(a.activityTrainingLoad) : null,
+    vo2: a.vO2MaxValue || null,
+    kcal: a.calories ? Math.round(a.calories) : null,
+    cadencia: a.averageRunningCadenceInStepsPerMinute ? Math.round(a.averageRunningCadenceInStepsPerMinute) : null,
+    desnivel: a.elevationGain ? Math.round(a.elevationGain) : null,
+    // Minutos en cada zona de pulso (1 a 5)
+    zonas: [1, 2, 3, 4, 5].map(z => Math.round((a['hrTimeInZone_' + z] || 0) / 6) / 10),
   };
   if (tipo === 'fuerza') {
     act.reps = a.totalReps || 0;
